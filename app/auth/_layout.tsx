@@ -7,5 +7,5 @@ export default function RootLayout() {
       <StatusBar barStyle="default" />
       <Stack screenOptions={{ headerShown: false }} />
     </>
-  )
+  );
 }
