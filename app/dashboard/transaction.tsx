@@ -1,11 +1,12 @@
+import ThemedSafeAreaView from "@/components/ThemedSafeAreaView"
 import { Text } from "react-native"
 import { View } from "react-native"
 
 const Transaction = () => {
     return (
-        <View>
+        <ThemedSafeAreaView>
             <Text>Transaction</Text>
-        </View>
+        </ThemedSafeAreaView>
     )
 }
 

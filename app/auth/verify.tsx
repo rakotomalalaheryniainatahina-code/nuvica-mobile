@@ -1,13 +1,14 @@
 import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
 import ThemedView from "@/components/ThemedView";
 import { Colors } from "@/constant/Colors";
-import { Image, TextInput, View } from "react-native";
-import { Text, useColorScheme } from "react-native";
+import { Image } from "react-native";
+import { useColorScheme } from "react-native";
 import ThemedPressable from '../../components/ThemedPressable';
 import OTPTextInput from "react-native-otp-textinput";
 import Separator from "@/components/Separator";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
+import ThemedText from "@/components/ThemedText";
 
 
 const Verify = () => {
@@ -20,11 +21,11 @@ const Verify = () => {
         <ThemedSafeAreaView style={{ position: "relative", flex: 1, justifyContent: "space-between" }}>
             <ThemedView style={{ zIndex: 2, position: "absolute", flex: 1, gap: 20, marginHorizontal: "auto", width: "100%", height: "100%", backgroundColor: "transparent", justifyContent: "center", alignItems: "center" }}>
                 <Image source={require("@/assets/images/logo.png")} style={{ width: 50, height: 50 }} />
-                <Text style={{ color: "#fff", textAlign: "center", fontSize: 30, }}>Vérifier l'e-mail</Text>
+                <ThemedText style={{ color: "#fff", textAlign: "center", fontSize: 30, }}>Vérifier l'e-mail</ThemedText>
                 <ThemedView style={{ width: "88%", padding: 20, height: "auto", backgroundColor: theme.bgSecondary, borderRadius: 15, justifyContent: "center", alignItems: "center", }}>
-                    <Text style={{ color: theme.text, textAlign: "center", fontSize: 13 }}>Nous avons envoyé le code à votre adresse e-mail</Text>
+                    <ThemedText style={{ color: theme.text, textAlign: "center", fontSize: 13 }}>Nous avons envoyé le code à votre adresse e-mail</ThemedText>
                     <Separator style={{ height: 20 }} />
-                    <Text style={{ color: theme.text, textAlign: "center", fontSize: 20, }}>{email}</Text>
+                    <ThemedText style={{ color: theme.text, textAlign: "center", fontSize: 20, }}>{email}</ThemedText>
                     <Separator style={{ height: 30 }} />
                     <OTPTextInput
                         inputCount={4}           
@@ -35,11 +36,11 @@ const Verify = () => {
                     />
                     <Separator style={{ height: 40 }} />
                     <ThemedPressable style={{ width: "100%", borderRadius: 10, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ color: "#fff", fontSize: 20 }}>Vérifier</Text>
+                        <ThemedText style={{ color: "#fff", fontSize: 20 }}>Vérifier</ThemedText>
                     </ThemedPressable>
                     <Separator style={{ height: 30 }} />
                     <ThemedPressable style={{ width: "100%", borderRadius: 10, backgroundColor: theme.background, justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ color: theme.text, fontSize: 20 }}>Envoyer à nouveau</Text>
+                        <ThemedText style={{ color: theme.text, fontSize: 20 }}>Envoyer à nouveau</ThemedText>
                     </ThemedPressable>
                 </ThemedView>
             </ThemedView>

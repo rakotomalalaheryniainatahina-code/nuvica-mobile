@@ -1,11 +1,13 @@
+import ThemedSafeAreaView from "@/components/ThemedSafeAreaView"
+import TopHeros from "@/components/Topheros"
 import { Text } from "react-native"
-import { View } from "react-native"
 
 const Wallet = () => {
     return (
-        <View>
+        <ThemedSafeAreaView>
+            <TopHeros />
             <Text>Wallet</Text>
-        </View>
+        </ThemedSafeAreaView>
     )
 }
 

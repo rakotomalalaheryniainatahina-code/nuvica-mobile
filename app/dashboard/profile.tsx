@@ -1,11 +1,12 @@
+import ThemedSafeAreaView from "@/components/ThemedSafeAreaView"
 import { View } from "react-native"
 import { Text } from "react-native"
 
 const Profile = () => {
     return (
-        <View>
+        <ThemedSafeAreaView>
             <Text>Profile</Text>
-        </View>
+        </ThemedSafeAreaView>
     )
 }
 
