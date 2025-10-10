@@ -1,6 +1,15 @@
 export const Colors = {
     primary: "#1D61E7",
     secondary: "#F0F0F0",
+    violet: "#7C3AED",
+    greentow: "#4ADE80",
+    green: "#23CF5F",
+    redKely: "#FF6B6B",
+    orange: "#FFA500",
+    rorekely: '#FFA07A',
+    greenkely: "#98D8C8",
+    bluetow: "#45B7D1",
+    bluefre: "#4ECDC4",
     dark: {
         background: "#18181b",
         bgSecondary: "#27272a",

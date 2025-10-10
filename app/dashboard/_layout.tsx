@@ -12,6 +12,7 @@ import { StatusBar, useColorScheme, View, Animated, Platform } from "react-nativ
 import { Colors } from "@/constant/Colors";
 import { useEffect, useRef } from "react";
 import { Theme } from "@/types/ColorType";
+import { Ionicons } from "@expo/vector-icons";
 
 const AnimatedTabIcon = ({ focused, Icon, size }: any) => {
     const scale = useRef(new Animated.Value(1)).current;
@@ -109,8 +110,8 @@ export default function DashboardLayout() {
 
     return (
         <>
-            <StatusBar 
-                barStyle={isLightMode ? "dark-content" : "light-content"} 
+            <StatusBar
+                barStyle={isLightMode ? "dark-content" : "light-content"}
                 backgroundColor="transparent"
                 translucent
             />
@@ -121,16 +122,16 @@ export default function DashboardLayout() {
                     tabBarInactiveTintColor: "#8E8E93",
                     tabBarStyle: {
                         position: "absolute",
-                        backgroundColor: isLightMode 
-                            ? "rgba(255, 255, 255, 0.85)" 
+                        backgroundColor: isLightMode
+                            ? "rgba(255, 255, 255, 0.85)"
                             : "rgba(28, 28, 30, 0.85)",
                         backdropFilter: "blur(20px)",
                         paddingVertical: 16,
-                        height: 100,
+                        height: 110,
                         paddingBottom: 16,
                         borderTopWidth: 0.5,
-                        borderTopColor: isLightMode 
-                            ? "rgba(0, 0, 0, 0.08)" 
+                        borderTopColor: isLightMode
+                            ? "rgba(0, 0, 0, 0.08)"
                             : "rgba(255, 255, 255, 0.08)",
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: -4 },
@@ -186,26 +187,14 @@ export default function DashboardLayout() {
                 <Tabs.Screen
                     name="schedule"
                     options={{
-                        title: "Calendrier",
+                        title: "Épargne",
                         tabBarIcon: ({ focused, size }) => (
-                            <AnimatedTabIcon
-                                focused={focused}
-                                Icon={focused ? ScheduleSelectedIcon : ScheduleIcon}
+                            <Ionicons
+                                name={focused ? "rocket" : "rocket-outline"}
                                 size={size}
+                                color={focused ? "#292d329a" : "#292D32"}
                             />
                         ),
-                        tabBarBadge: 3,
-                        tabBarBadgeStyle: {
-                            backgroundColor: "#FF3B30",
-                            color: "white",
-                            fontSize: 10,
-                            fontWeight: "700",
-                            minWidth: 18,
-                            height: 18,
-                            borderRadius: 9,
-                            lineHeight: 18,
-                            paddingHorizontal: 4,
-                        },
                     }}
                 />
                 <Tabs.Screen
