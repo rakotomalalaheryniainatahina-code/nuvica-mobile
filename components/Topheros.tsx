@@ -6,6 +6,7 @@ import NotificationIcon from "@/assets/icons/notification_1.svg";
 import NotificationSelectedIcon from "@/assets/icons/notification_2.svg";
 import { Theme } from "@/types/ColorType";
 import { useRouter } from "expo-router";
+import Greeting from "./Greeting";
 
 interface TopHerosProps {
     focused?: boolean; 
@@ -27,7 +28,8 @@ const onNotificationPress = () => {
                     style={styles.avatar}
                 />
                 <View>
-                    <ThemedText style={[styles.title, {fontWeight: "medium", color: theme.text }]}>Hello !</ThemedText>
+                    {/* <ThemedText style={[styles.title, {fontWeight: "medium", color: theme.text }]}>Hello !</ThemedText> */}
+                    <Greeting />
                     <ThemedText style={[styles.title, { color: theme.text }]}>Rakotomalala</ThemedText>
                 </View>
             </View>

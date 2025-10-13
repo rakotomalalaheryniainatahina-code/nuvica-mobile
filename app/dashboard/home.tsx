@@ -76,12 +76,14 @@ const Home = () => {
     return (
         <ThemedSafeAreaView>
             <ThemedScrollView stickyHeaderIndices={[0]}>
-                <View style={{ width: "100%", height: "auto", zIndex:2 }}>
+                <View style={{ width: "100%", height: "auto", zIndex: 2 }}>
                     <Topheros />
                 </View>
-                <ThemedView style={{ width: "100%", height: 220, backgroundColor: Colors.primary, }}>
-                    <ImageBackground source={Image.starBG} style={{ width: "100%", height: "100%", justifyContent: "center", }}>
-                        <ThemedView style={{ width: "90%", marginTop: -100, marginHorizontal: "auto", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", backgroundColor: "transparent" }}>
+                <ThemedView
+                    style={styles.header}
+                >
+                    <ImageBackground source={Image.starBG} style={{ width: "100%", height: "100%", justifyContent: "center", paddingVertical: 15, paddingHorizontal: 24, gap: 20 }}>
+                        <ThemedView style={{ width: "90%", marginHorizontal: "auto", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", backgroundColor: "transparent" }}>
                             <ThemedView style={{ flexDirection: "column", justifyContent: "flex-end", backgroundColor: "transparent", gap: 1, }}>
                                 <ThemedText style={{ color: Colors.green, fontSize: 20, }}>Solde actuel <Ionicons name="wallet" size={25} color={Colors.green} /></ThemedText>
                                 <ThemedText style={{ color: "#fff", fontSize: 35, marginBottom: -9 }}>{vola.toFixed(2)} Ar</ThemedText>
@@ -91,51 +93,43 @@ const Home = () => {
                                 <ThemedText style={{ color: "#fff", fontSize: 13, }}> {pourcent.toFixed(2)} %</ThemedText>
                             </ThemedView>
                         </ThemedView>
+                        {/* Quick Stats */}
+                        <View style={styles.quickStats}>
+                            <ThemedView style={{ width: 90, backgroundColor: "transparent", flexDirection: "column", justifyContent: "center", alignItems: "center", }}>
+                                <LinearGradient
+                                    colors={["#fb923c", "#ea580c"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={{ width: 40, height: 40, flexDirection: "row", justifyContent: "center", alignItems: "center", borderRadius: 50, }}
+                                >
+                                    <Ionicons name="trending-up-outline" size={25} color={"#fff"} />
+                                </LinearGradient>
+                                <ThemedText style={{ textAlign: "center", color: "#fff" }}>{vola.toFixed(2)} Ar</ThemedText>
+                            </ThemedView>
+                            <ThemedView style={{ width: 90, backgroundColor: "transparent", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                                <LinearGradient
+                                    colors={["#4ade80", "#16a34a"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={{ width: 40, height: 40, flexDirection: "row", justifyContent: "center", alignItems: "center", borderRadius: 50, }}
+                                >
+                                    <Ionicons name="arrow-up-circle-outline" size={25} color={"#fff"} />
+                                </LinearGradient>
+                                <ThemedText style={{ textAlign: "center", color: "#fff" }}>{vola.toFixed(2)} Ar</ThemedText>
+                            </ThemedView>
+                            <ThemedView style={{ width: 90, backgroundColor: "transparent", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                                <LinearGradient
+                                    colors={["#f87171", "#dc2626"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={{ width: 40, height: 40, flexDirection: "row", justifyContent: "center", alignItems: "center", borderRadius: 50, }}
+                                >
+                                    <Ionicons name="arrow-down-circle-outline" size={25} color={"#fff"} />
+                                </LinearGradient>
+                                <ThemedText style={{ textAlign: "center", color: "#fff" }}>{vola.toFixed(2)} Ar</ThemedText>
+                            </ThemedView>
+                        </View>
                     </ImageBackground>
-                </ThemedView>
-                <ThemedView style={{ width: "90%", marginHorizontal: "auto", borderRadius: 7, height: 100, marginTop: -110, backgroundColor: "transparent", flexDirection: "column", zIndex: 1 }}>
-                    <ThemedView style={{ width: "100%", marginHorizontal: "auto", borderRadius: 7, height: "auto", flexDirection: "row", backgroundColor: theme.bgSecondary, marginTop: 15, justifyContent: "center", padding: 6, }}>
-                        <ThemedText style={{ textAlign: "center", fontSize: 15 }}>Ce mois-ci</ThemedText>
-                    </ThemedView>
-                    <ThemedView style={{ backgroundColor: "transparent", flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 30 }}>
-                        <ThemedView style={{ width: 10, height: 10, backgroundColor: theme.bgSecondary }}></ThemedView>
-                        <ThemedView style={{ width: 10, height: 10, backgroundColor: theme.bgSecondary }}></ThemedView>
-                    </ThemedView>
-                    <ThemedView style={{ flexDirection: "row", borderRadius: 7, backgroundColor: theme.bgSecondary, justifyContent: "space-between", padding: 20, }}>
-                        <ThemedView style={{ width: 90, backgroundColor: "transparent", flexDirection: "column", justifyContent: "center", alignItems: "center", }}>
-                            <LinearGradient
-                                colors={["#fb923c", "#ea580c"]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={{ width: 40, height: 40, flexDirection: "row", justifyContent: "center", alignItems: "center", borderRadius: 50, }}
-                            >
-                                <Ionicons name="trending-up-outline" size={25} color={"#fff"} />
-                            </LinearGradient>
-                            <ThemedText style={{ textAlign: "center" }}>{vola.toFixed(2)} Ar</ThemedText>
-                        </ThemedView>
-                        <ThemedView style={{ width: 90, backgroundColor: "transparent", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                            <LinearGradient
-                                colors={["#4ade80", "#16a34a"]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={{ width: 40, height: 40, flexDirection: "row", justifyContent: "center", alignItems: "center", borderRadius: 50, }}
-                            >
-                                <Ionicons name="arrow-up-circle-outline" size={25} color={"#fff"} />
-                            </LinearGradient>
-                            <ThemedText >{vola.toFixed(2)} Ar</ThemedText>
-                        </ThemedView>
-                        <ThemedView style={{ width: 90, backgroundColor: "transparent", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                            <LinearGradient
-                                colors={["#f87171", "#dc2626"]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={{ width: 40, height: 40, flexDirection: "row", justifyContent: "center", alignItems: "center", borderRadius: 50, }}
-                            >
-                                <Ionicons name="arrow-down-circle-outline" size={25} color={"#fff"} />
-                            </LinearGradient>
-                            <ThemedText>-{vola.toFixed(2)} Ar</ThemedText>
-                        </ThemedView>
-                    </ThemedView>
                 </ThemedView>
                 <ThemedView style={{ paddingHorizontal: 20, paddingTop: 80, flexDirection: "column", gap: 10 }}>
                     <ThemedText style={{ fontSize: 20 }}>Alertes Budget</ThemedText>
@@ -159,7 +153,7 @@ const Home = () => {
                                                 }
                                                 size={30}
                                                 color={alert.type === "danger" ? "#FF6B6B" : "#FFA500"}
-                                                style={{ backgroundColor: alert.type === "danger" ? "#ff6b6b23" : "#ffa60027", padding: 8,borderRadius: 6, }}
+                                                style={{ backgroundColor: alert.type === "danger" ? "#ff6b6b23" : "#ffa60027", padding: 8, borderRadius: 6, }}
                                             />
 
                                         </View>
@@ -248,5 +242,17 @@ const styles = StyleSheet.create({
     alertMessage: {
         fontSize: 14,
         marginBottom: 12,
+    },
+    header: {
+        height: 230,
+        backgroundColor: Colors.primary,
+    },
+    quickStats: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        backgroundColor: "rgba(255, 255, 255, 0.15)",
+        borderRadius: 6,
+        padding: 16,
+        alignItems: "center",
     },
 });

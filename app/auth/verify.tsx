@@ -22,7 +22,7 @@ const Verify = () => {
             <ThemedView style={{ zIndex: 2, position: "absolute", flex: 1, gap: 20, marginHorizontal: "auto", width: "100%", height: "100%", backgroundColor: "transparent", justifyContent: "center", alignItems: "center" }}>
                 <Image source={require("@/assets/images/logo.png")} style={{ width: 50, height: 50 }} />
                 <ThemedText style={{ color: "#fff", textAlign: "center", fontSize: 30, }}>Vérifier l'e-mail</ThemedText>
-                <ThemedView style={{ width: "88%", padding: 20, height: "auto", backgroundColor: theme.bgSecondary, borderRadius: 15, justifyContent: "center", alignItems: "center", }}>
+                <ThemedView style={{ width: "88%", padding: 20, height: "auto", backgroundColor: theme.bgSecondary, borderRadius: 6, justifyContent: "center", alignItems: "center", }}>
                     <ThemedText style={{ color: theme.text, textAlign: "center", fontSize: 13 }}>Nous avons envoyé le code à votre adresse e-mail</ThemedText>
                     <Separator style={{ height: 20 }} />
                     <ThemedText style={{ color: theme.text, textAlign: "center", fontSize: 20, }}>{email}</ThemedText>
@@ -32,15 +32,15 @@ const Verify = () => {
                         handleTextChange={setCode}
                         tintColor={`${Colors.primary}`}       
                         offTintColor="#ccc"  
-                        style={{ borderRadius: 10, borderColor: theme.coloborder, borderWidth: 2, paddingHorizontal: 16, color: theme.text, marginHorizontal: 10, width: 50, height: 50 }}       
+                        style={{ borderRadius: 6, borderColor: theme.coloborder, borderWidth: 1, paddingHorizontal: 16, color: theme.text, marginHorizontal: 10, width: 50, height: 50 }}       
                     />
                     <Separator style={{ height: 40 }} />
-                    <ThemedPressable style={{ width: "100%", borderRadius: 10, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" }}>
-                        <ThemedText style={{ color: "#fff", fontSize: 20 }}>Vérifier</ThemedText>
+                    <ThemedPressable style={{ width: "100%", borderRadius: 6, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" }}>
+                        <ThemedText style={{ color: "#fff", fontSize: 16 }}>Vérifier</ThemedText>
                     </ThemedPressable>
                     <Separator style={{ height: 30 }} />
-                    <ThemedPressable style={{ width: "100%", borderRadius: 10, backgroundColor: theme.background, justifyContent: "center", alignItems: "center" }}>
-                        <ThemedText style={{ color: theme.text, fontSize: 20 }}>Envoyer à nouveau</ThemedText>
+                    <ThemedPressable style={{ width: "100%", borderRadius: 6, backgroundColor: theme.background, justifyContent: "center", alignItems: "center" }}>
+                        <ThemedText style={{ color: theme.text, fontSize: 16 }}>Envoyer à nouveau</ThemedText>
                     </ThemedPressable>
                 </ThemedView>
             </ThemedView>

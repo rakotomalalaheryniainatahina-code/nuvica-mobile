@@ -9,26 +9,73 @@ import {
     Image,
     Switch,
     Alert,
+    ImageBackground,
+    TextInput,
 } from "react-native";
 import { Colors } from "@/constant/Colors";
 import { Theme } from "@/types/ColorType";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import Images from "@/constant/Images";
+import ThemedView from "@/components/ThemedView";
+import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
+import ProfileInfoModal from "@/components/Greeting";
+import { Modal } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import ThemedText from "@/components/ThemedText";
+import ThemedScrollView from "@/components/ThemedScrollView";
 
-export default function ProfilePage() {
+
+type ProfileData = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    country: string;
+    occupation: string;
+    dateOfBirth: string;
+    avatar: string;
+};
+
+interface ProfileInfoModalProps {
+    initialData?: ProfileData;
+}
+
+export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
     const colorScheme = useColorScheme();
     const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
     const isLight = theme === Colors.light;
-
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showSecurityModal, setShowSecurityModal] = useState(false);
     const [notifications, setNotifications] = useState(true);
-    const [biometric, setBiometric] = useState(false);
     const [darkMode, setDarkMode] = useState(!isLight);
-
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const vola = 5000;
     const userStats = {
         totalTransactions: 245,
         activeBudgets: 5,
         savingsGoal: 75,
-        memberSince: "Janvier 2024",
+        memberSince: "Septembre 2025",
+    };
+
+    const [profileData, setProfileData] = useState({
+        firstName: "Jean",
+        lastName: "Rakoto",
+        email: "jean.rakoto@email.com",
+        phone: "+261 34 12 345 67",
+        address: "Lot II A 123 Antananarivo",
+        city: "Antananarivo",
+        country: "Madagascar",
+        occupation: "Développeur Web",
+        dateOfBirth: "15/03/1990",
+        avatar: "file://path/to/image.jpg"
+    });
+
+    const handleSaveProfile = (data: ProfileData) => {
+        setProfileData(data);
+        // Sauvegarder dans votre backend ou AsyncStorage
+        console.log("Profile saved:", data);
     };
 
     const handleLogout = () => {
@@ -46,6 +93,96 @@ export default function ProfilePage() {
                     },
                 },
             ]
+        );
+    };
+    const [formData, setFormData] = useState<ProfileData>(
+        initialData || {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@email.com",
+            phone: "+261 34 12 345 67",
+            address: "Lot II A 123 Antananarivo",
+            city: "Antananarivo",
+            country: "Madagascar",
+            occupation: "Développeur",
+            dateOfBirth: "15/03/1990",
+            avatar: "https://ui-avatars.com/api/?name=John+Doe&size=200&background=6366F1&color=fff&bold=true",
+        }
+    );
+    const [errors, setErrors] = useState<Partial<Record<keyof ProfileData, string>>>({});
+
+    const updateField = (field: keyof ProfileData, value: string) => {
+        setFormData({ ...formData, [field]: value });
+        // Clear error when user types
+        if (errors[field]) {
+            setErrors({ ...errors, [field]: undefined });
+        }
+    };
+    const [password, setPassword] = useState("qr]Dkùm#");
+    const [showPassword, setShowPassword] = useState(false);
+
+    // Fonction pour générer un mot de passe aléatoire
+    const generatePassword = () => {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
+        let newPass = "";
+        for (let i = 0; i < 15; i++) {
+            newPass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setPassword(newPass);
+
+    };
+    const pickImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            updateField("avatar", result.assets[0].uri);
+        }
+    };
+    const takePhoto = async () => {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+        if (status !== "granted") {
+            Alert.alert(
+                "Permission refusée",
+                "Nous avons besoin de la permission d'accès à la caméra."
+            );
+            return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            updateField("avatar", result.assets[0].uri);
+        }
+    };
+    const showImageOptions = () => {
+        Alert.alert(
+            "Photo de profil",
+            "Choisissez une option",
+            [
+                {
+                    text: "Prendre une photo",
+                    onPress: takePhoto,
+                },
+                {
+                    text: "Choisir depuis la galerie",
+                    onPress: pickImage,
+                },
+                {
+                    text: "Annuler",
+                    style: "cancel",
+                },
+            ],
+            { cancelable: true }
         );
     };
 
@@ -114,62 +251,61 @@ export default function ProfilePage() {
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <ThemedSafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header avec Profil */}
-                <LinearGradient
-                    colors={
-                        isLight
-                            ? [Colors.primary, "#7C3AED", "#6366F1"]
-                            : ["#1a1a2e", "#16213e", "#0f3460"]
-                    }
+
+                <ThemedView
                     style={styles.header}
                 >
-                    <View style={styles.profileSection}>
-                        <View style={styles.avatarContainer}>
-                            <Image
-                                source={{
-                                    uri: "https://ui-avatars.com/api/?name=John+Doe&size=200&background=6366F1&color=fff&bold=true",
-                                }}
-                                style={styles.avatar}
-                            />
-                            <TouchableOpacity style={styles.editAvatarButton}>
-                                <Ionicons name="camera" size={16} color="#FFF" />
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={styles.userName}>John Doe</Text>
-                        <Text style={styles.userEmail}>john.doe@email.com</Text>
-                    </View>
+                    <ImageBackground source={Images.starBG} style={{ width: "100%", height: "100%", justifyContent: "center", paddingVertical: 15, paddingHorizontal: 24, }}>
 
-                    {/* Stats */}
-                    <View style={styles.statsContainer}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>
-                                {userStats.totalTransactions}
-                            </Text>
-                            <Text style={styles.statLabel}>Transactions</Text>
+                        <View style={[styles.profileSection, { gap: 40 }]}>
+                            <View style={styles.avatarContainer}>
+                                <Image
+                                    source={{
+                                        uri: formData.avatar,
+                                    }}
+                                    style={styles.avatar}
+                                />
+                            </View>
+                            <View>
+                                <Text style={styles.userName}>Rakotomalala</Text>
+                                <Text style={styles.userEmail}>tahina615@gmail.com</Text>
+                                <Text style={{ fontSize: 35, color: "#fff" }}>{vola.toFixed(2)} Ar</Text>
+                            </View>
                         </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>
-                                {userStats.activeBudgets}
-                            </Text>
-                            <Text style={styles.statLabel}>Budgets</Text>
+
+                        {/* Stats */}
+                        <View style={styles.statsContainer}>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statValue}>
+                                    {userStats.totalTransactions}
+                                </Text>
+                                <Text style={styles.statLabel}>Transactions</Text>
+                            </View>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                                <Text style={styles.statValue}>
+                                    {userStats.activeBudgets}
+                                </Text>
+                                <Text style={styles.statLabel}>Budgets</Text>
+                            </View>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                                <Text style={styles.statValue}>
+                                    {userStats.savingsGoal}%
+                                </Text>
+                                <Text style={styles.statLabel}>Épargne</Text>
+                            </View>
                         </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>
-                                {userStats.savingsGoal}%
-                            </Text>
-                            <Text style={styles.statLabel}>Épargne</Text>
-                        </View>
-                    </View>
-                </LinearGradient>
+                    </ImageBackground>
+                </ThemedView>
 
                 {/* Menu Sections */}
                 <View style={styles.content}>
                     {/* Compte */}
-                    <View style={styles.section}>
+                    <View >
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>
                             Compte
                         </Text>
@@ -177,24 +313,271 @@ export default function ProfilePage() {
                             icon="person-outline"
                             title="Informations personnelles"
                             subtitle="Modifier vos informations"
-                            onPress={() => console.log("Profile info")}
+                            onPress={() => setShowAddModal(true)}
                         />
+                        {/* Informations personnelles */}
+                        <Modal
+                            visible={showAddModal}
+                            animationType="slide"
+                            transparent
+                            onRequestClose={() => setShowAddModal(false)}
+                        >
+
+                            <View style={styles.modalOverlay}>
+                                <View
+                                    style={[
+                                        styles.modalContent,
+                                        { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
+                                    ]}
+                                >
+                                    <View style={[styles.modalHeader, { paddingHorizontal: 24, paddingBottom: 24 }]}>
+                                        <Text style={[styles.modalTitle, { color: theme.text }]}>
+                                            Informations personnelles
+                                        </Text>
+                                        <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                                            <Ionicons name="close" size={28} color={theme.text} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <ScrollView showsVerticalScrollIndicator={false} style={{ height: "100%", backgroundColor: isLight ? "#fff" : "#1F1F1F", paddingHorizontal: 24 }}>
+                                        <View style={styles.avatarSection}>
+                                            <View style={styles.avatarContainers}>
+                                                <Image source={{ uri: formData.avatar }} style={styles.avatars} />
+                                                <TouchableOpacity
+                                                    style={styles.avatarEditButton}
+                                                    onPress={showImageOptions}
+                                                >
+                                                    <Ionicons name="camera" size={20} color="#FFF" />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <Text style={[styles.avatarHint, { color: theme.text }]}>
+                                                Appuyez pour changer la photo
+                                            </Text>
+                                        </View>
+                                        <View style={{ flexDirection: "column", gap: 20 }}>
+                                            <View style={{ flexDirection: "column", gap: 19 }}>
+                                                <Text style={{ fontSize: 14, fontWeight: "600", }}>Nom</Text>
+                                                <TextInput
+                                                    style={[
+                                                        styles.input,
+                                                        {
+                                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
+                                                            color: isLight ? "#2A2A2A" : "#F5F5F5",
+                                                        },
+                                                    ]}
+                                                    placeholder="Nom"
+                                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
+                                                    multiline
+                                                    numberOfLines={3}
+                                                />
+                                            </View>
+                                            <View style={{ flexDirection: "column", gap: 19 }}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 12 }}>Email</Text>
+                                                <TextInput
+                                                    style={[
+                                                        styles.input,
+                                                        {
+                                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
+                                                            color: isLight ? "#2A2A2A" : "#F5F5F5",
+                                                        },
+                                                    ]}
+                                                    placeholder="Email"
+                                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
+                                                    multiline
+                                                    numberOfLines={3}
+                                                />
+                                            </View>
+                                            <View style={{ flexDirection: "column", gap: 19 }}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 12 }}>Numero de telephone</Text>
+                                                <TextInput
+                                                    style={[
+                                                        styles.input,
+                                                        {
+                                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
+                                                            color: isLight ? "#2A2A2A" : "#F5F5F5",
+                                                        },
+                                                    ]}
+                                                    placeholder="Numero de telephone"
+                                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
+                                                    multiline
+                                                    numberOfLines={3}
+                                                />
+                                            </View>
+                                            <View style={[styles.buttonContainer, { paddingBottom: 40, gap: 24 }]}>
+                                                <TouchableOpacity
+                                                    style={[styles.saveButton, { backgroundColor: Colors.primary }]}
+                                                    onPress={() => console.log("hello")
+                                                    }
+                                                >
+                                                    <Text style={styles.saveButtonText}>Enregistrer les modifications</Text>
+                                                </TouchableOpacity>
+
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.cancelButton,
+                                                        {
+                                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
+                                                        },
+                                                    ]}
+                                                    onPress={() => setShowAddModal(false)}
+                                                >
+                                                    <Text style={[styles.cancelButtonText, { color: theme.text }]}>
+                                                        Annuler
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        </Modal>
+
                         <MenuItem
                             icon="lock-closed-outline"
                             title="Sécurité"
                             subtitle="Mot de passe et authentification"
-                            onPress={() => console.log("Security")}
+                            onPress={() => setShowSecurityModal(true)}
                         />
-                        <MenuItem
-                            icon="card-outline"
-                            title="Méthodes de paiement"
-                            subtitle="Gérer vos cartes"
-                            onPress={() => console.log("Payment methods")}
-                        />
+                        {/* Mot de passe et authentification */}
+
+                        <Modal
+                            visible={showSecurityModal}
+                            animationType="slide"
+                            transparent
+                            onRequestClose={() => setShowSecurityModal(false)}
+                        >
+
+                            <View style={styles.modalOverlay}>
+                                <View
+                                    style={[
+                                        styles.modalContent,
+                                        { backgroundColor: isLight ? "#FFF" : "#1F1F1F", },
+                                    ]}
+                                >
+                                    <View style={[styles.modalHeader, { paddingHorizontal: 24, paddingBottom: 24 }]}>
+                                        <Text style={[styles.modalTitle, { color: theme.text }]}>
+                                            Authentification
+                                        </Text>
+                                        <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                                            <Ionicons name="close" size={28} color={theme.text} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <ScrollView
+                                        showsVerticalScrollIndicator={false}
+                                        style={{
+                                            height: "100%",
+                                            backgroundColor: isLight ? "#fff" : "#1F1F1F",
+                                            paddingHorizontal: 24,
+                                        }}
+                                    >
+                                        <View style={{ flexDirection: "column", gap: 20 }}>
+                                            {/* Champ Email */}
+                                            <View style={{ flexDirection: "column", gap: 19 }}>
+                                                <Text style={{ fontSize: 14, fontWeight: "600" }}>Email</Text>
+                                                <TextInput
+                                                    style={[
+                                                        styles.input,
+                                                        {
+                                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
+                                                            color: theme.text,
+                                                        },
+                                                    ]}
+                                                    placeholder="Email"
+                                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
+                                                />
+                                            </View>
+
+                                            {/* Champ Ancien mot de passe */}
+                                            <View style={{ flexDirection: "column", gap: 19 }}>
+                                                <Text style={{ fontSize: 14, fontWeight: "600" }}>Mot de passe</Text>
+                                                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                                    <TextInput
+                                                        style={[
+                                                            styles.input,
+                                                            {
+                                                                flex: 1,
+                                                                backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
+                                                                color: isLight ? "#2A2A2A" : "#F5F5F5",
+                                                            },
+                                                        ]}
+                                                        placeholder="Mot de passe"
+                                                        placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
+                                                    />
+                                                </View>
+                                            </View>
+
+                                            {/* Changer le mot de passe */}
+                                            <Text style={{ fontSize: 24, fontWeight: "600", marginBottom: 12 }}>
+                                                Changer le mot de passe
+                                            </Text>
+                                            <View style={{ flexDirection: "column", gap: 19 }}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 12 }}>
+                                                    Nouveau mot de passe
+                                                </Text>
+                                                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",paddingHorizontal:16, borderRadius:6 }}>
+                                                    <TextInput
+                                                        style={[
+                                                            styles.input,
+                                                            {
+                                                                flex: 1,
+                                                                color: isLight ? "#2A2A2A" : "#F5F5F5",
+                                                                paddingHorizontal:0
+                                                            },
+                                                        ]}
+                                                        placeholder="Mot de passe"
+                                                        value={password}
+                                                        onChangeText={setPassword}
+                                                        secureTextEntry={!showPassword}
+                                                    />
+                                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                                        <Ionicons
+                                                            name={showPassword ? "eye-off" : "eye"}
+                                                            size={22}
+                                                            color={theme.text}
+                                                            style={{ marginLeft: 8 }}
+                                                        />
+                                                    </TouchableOpacity>
+                                                </View>
+
+                                                <TouchableOpacity
+                                                    style={[styles.saveButton, { backgroundColor: Colors.primary }]}
+                                                    onPress={generatePassword}
+                                                >
+                                                    <Text style={styles.saveButtonText}>Générer un nouveau mot de passe</Text>
+                                                </TouchableOpacity>
+                                            </View>
+
+                                            {/* Boutons */}
+                                            <View style={[styles.buttonContainer, { paddingBottom: 40, gap: 24 }]}>
+                                                <TouchableOpacity
+                                                    style={[styles.saveButton, { backgroundColor: Colors.primary }]}
+                                                    onPress={() => console.log("Enregistrement...")}
+                                                >
+                                                    <Text style={styles.saveButtonText}>Enregistrer les modifications</Text>
+                                                </TouchableOpacity>
+
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.cancelButton,
+                                                        {
+                                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
+                                                        },
+                                                    ]}
+                                                    onPress={() => setShowAddModal(false)}
+                                                >
+                                                    <Text style={[styles.cancelButtonText, { color: theme.text }]}>
+                                                        Annuler
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        </Modal>
                     </View>
 
                     {/* Préférences */}
-                    <View style={styles.section}>
+                    <View >
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>
                             Préférences
                         </Text>
@@ -232,38 +615,10 @@ export default function ProfilePage() {
                                 />
                             }
                         />
-                        <MenuItem
-                            icon="finger-print-outline"
-                            title="Authentification biométrique"
-                            subtitle={biometric ? "Activée" : "Désactivée"}
-                            rightElement={
-                                <Switch
-                                    value={biometric}
-                                    onValueChange={setBiometric}
-                                    trackColor={{
-                                        false: "#767577",
-                                        true: Colors.primary,
-                                    }}
-                                    thumbColor="#FFF"
-                                />
-                            }
-                        />
-                        <MenuItem
-                            icon="globe-outline"
-                            title="Langue"
-                            subtitle="Français"
-                            onPress={() => console.log("Language")}
-                        />
-                        <MenuItem
-                            icon="cash-outline"
-                            title="Devise"
-                            subtitle="Ariary (MGA)"
-                            onPress={() => console.log("Currency")}
-                        />
                     </View>
 
                     {/* Données */}
-                    <View style={styles.section}>
+                    <View >
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>
                             Données
                         </Text>
@@ -288,7 +643,7 @@ export default function ProfilePage() {
                     </View>
 
                     {/* Support */}
-                    <View style={styles.section}>
+                    <View >
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>
                             Support
                         </Text>
@@ -320,7 +675,7 @@ export default function ProfilePage() {
                     </View>
 
                     {/* À propos */}
-                    <View style={styles.section}>
+                    <View>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>
                             À propos
                         </Text>
@@ -331,13 +686,13 @@ export default function ProfilePage() {
                         />
                         <MenuItem
                             icon="heart-outline"
-                            title="Développé avec ❤️"
-                            subtitle={`Membre depuis ${userStats.memberSince}`}
+                            title="Développé avec couer"
+                            subtitle={`Par Rakotomalala, le ${userStats.memberSince}`}
                         />
                     </View>
 
                     {/* Déconnexion */}
-                    <View style={styles.section}>
+                    <View>
                         <MenuItem
                             icon="log-out-outline"
                             title="Déconnexion"
@@ -346,10 +701,10 @@ export default function ProfilePage() {
                         />
                     </View>
 
-                    <View style={{ height: 40 }} />
+                    <View style={{ height: 100 }} />
                 </View>
             </ScrollView>
-        </View>
+        </ThemedSafeAreaView>
     );
 }
 
@@ -358,15 +713,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingTop: 60,
-        paddingBottom: 30,
-        paddingHorizontal: 24,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
+        height: 340,
+        backgroundColor: Colors.primary,
     },
     profileSection: {
-        alignItems: "center",
+        alignItems: "flex-start",
         marginBottom: 24,
+        flexDirection: "row",
     },
     avatarContainer: {
         position: "relative",
@@ -375,9 +728,9 @@ const styles = StyleSheet.create({
     avatar: {
         width: 100,
         height: 100,
-        borderRadius: 50,
+        borderRadius: 6,
         borderWidth: 4,
-        borderColor: "#FFF",
+        borderColor: Colors.green,
     },
     editAvatarButton: {
         position: "absolute",
@@ -399,14 +752,14 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     userEmail: {
-        fontSize: 14,
+        fontSize: 16,
         color: "#FFF",
         opacity: 0.9,
     },
     statsContainer: {
         flexDirection: "row",
         backgroundColor: "rgba(255, 255, 255, 0.15)",
-        borderRadius: 16,
+        borderRadius: 6,
         padding: 20,
         backdropFilter: "blur(10px)",
     },
@@ -434,26 +787,24 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 24,
     },
-    section: {
-        marginTop: 24,
-    },
     sectionTitle: {
         fontSize: 18,
         fontWeight: "700",
         marginBottom: 12,
+        marginTop: 24,
     },
     menuItem: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         padding: 16,
-        borderRadius: 16,
+        borderRadius: 6,
         marginBottom: 12,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
-        elevation: 2,
+        elevation: 1,
     },
     menuLeft: {
         flexDirection: "row",
@@ -475,5 +826,85 @@ const styles = StyleSheet.create({
     },
     menuSubtitle: {
         fontSize: 13,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        justifyContent: "flex-end",
+    },
+    modalContent: {
+        borderTopLeftRadius: 10,
+        borderTopRightRadius: 10,
+        paddingTop: 24,
+        maxHeight: "90%",
+    },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: "bold",
+    },
+    avatarSection: {
+        alignItems: "center",
+        paddingVertical: 32,
+    },
+    avatarContainers: {
+        position: "relative",
+        marginBottom: 12,
+    },
+    avatars: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        borderWidth: 4,
+        borderColor: Colors.green,
+    },
+    avatarEditButton: {
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: Colors.green,
+        justifyContent: "center",
+        alignItems: "center",
+        borderWidth: 3,
+        borderColor: "#FFF",
+    },
+    avatarHint: {
+        fontSize: 13,
+    },
+    input: {
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderRadius: 6,
+        fontSize: 16,
+    },
+    buttonContainer: {
+        marginTop: 16,
+        gap: 12,
+    },
+    saveButton: {
+        paddingVertical: 16,
+        borderRadius: 6,
+        alignItems: "center",
+    },
+    saveButtonText: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: "#FFF",
+    },
+    cancelButton: {
+        paddingVertical: 16,
+        borderRadius: 6,
+        alignItems: "center",
+    },
+    cancelButtonText: {
+        fontSize: 16,
+        fontWeight: "600",
     },
 });
