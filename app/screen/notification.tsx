@@ -14,13 +14,14 @@ import {
 import { Colors } from "@/constant/Colors";
 import { Theme } from "@/types/ColorType";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
 import ThemedView from "@/components/ThemedView";
 import { ImageBackground } from "react-native";
 import Image from "@/constant/Images";
 import ThemedScrollView from "@/components/ThemedScrollView";
+import { LinearGradient } from "expo-linear-gradient";
+import styles from "@/styles/notification";
 
 // Types
 interface Notification {
@@ -156,6 +157,7 @@ export default function NotificationsPage() {
     const isLight = theme === Colors.light;
     const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFICATIONS);
     const [showSettings, setShowSettings] = useState(false);
+    const [filterType, setFilterType] = useState<string | null>(null);
     const [settings, setSettings] = useState<NotificationSettings>({
         budgetAlerts: true,
         billReminders: true,
@@ -171,7 +173,6 @@ export default function NotificationsPage() {
     const [modalVisible, setModalVisible] = useState(false);
     const [currentSetting, setCurrentSetting] = useState<{ key: keyof NotificationSettings; value: any } | null>(null);
 
-    // Charger les paramètres au démarrage
     useEffect(() => {
         loadSettings();
     }, []);
@@ -210,11 +211,16 @@ export default function NotificationsPage() {
         if (currentSetting) {
             updateSetting(currentSetting.key, value);
             setModalVisible(false);
+            Alert.alert("✓ Enregistré", "Vos préférences ont été mises à jour");
         }
     };
 
-    const unreadCount = notifications.filter((n) => !n.read).length;
-    const highPriorityCount = notifications.filter(
+    const filteredNotifications = filterType
+        ? notifications.filter((n) => n.type === filterType)
+        : notifications;
+
+    const unreadCount = filteredNotifications.filter((n) => !n.read).length;
+    const highPriorityCount = filteredNotifications.filter(
         (n) => !n.read && n.priority === "high"
     ).length;
 
@@ -226,18 +232,22 @@ export default function NotificationsPage() {
 
     const markAllAsRead = () => {
         setNotifications(notifications.map((n) => ({ ...n, read: true })));
+        Alert.alert("✓ Succès", "Toutes les notifications ont été marquées comme lues");
     };
 
     const deleteNotification = (id: string) => {
         Alert.alert(
-            "Supprimer la notification",
+            "Supprimer",
             "Êtes-vous sûr de vouloir supprimer cette notification ?",
             [
                 { text: "Annuler", style: "cancel" },
                 {
                     text: "Supprimer",
                     style: "destructive",
-                    onPress: () => setNotifications(notifications.filter((n) => n.id !== id)),
+                    onPress: () => {
+                        setNotifications(notifications.filter((n) => n.id !== id));
+                        Alert.alert("✓ Supprimée", "La notification a été supprimée");
+                    },
                 },
             ]
         );
@@ -252,13 +262,184 @@ export default function NotificationsPage() {
                 {
                     text: "Tout effacer",
                     style: "destructive",
-                    onPress: () => setNotifications([]),
+                    onPress: () => {
+                        setNotifications([]);
+                        Alert.alert("✓ Effacé", "Toutes les notifications ont été supprimées");
+                    },
                 },
             ]
         );
     };
 
-    const groupedNotifications = notifications.reduce((groups, notif) => {
+    const handleNotificationAction = (notif: Notification) => {
+        switch (notif.type) {
+            case "budget":
+                Alert.alert(
+                    "Action Budget",
+                    "Que souhaitez-vous faire ?",
+                    [
+                        {
+                            text: "Voir le budget",
+                            onPress: () => Alert.alert("Navigation", "Redirection vers la page Budget..."),
+                        },
+                        {
+                            text: "Ajuster le budget",
+                            onPress: () => Alert.alert("Ajustement", "Augmenter le budget de ce mois ?"),
+                        },
+                        { text: "Annuler", style: "cancel" },
+                    ]
+                );
+                break;
+            case "bill":
+                Alert.alert(
+                    "Payer la facture",
+                    `Souhaitez-vous payer ${notif.message.match(/\d+,\d+ Ar/)?.[0] || "cette facture"} maintenant ?`,
+                    [
+                        {
+                            text: "Payer maintenant",
+                            onPress: () => {
+                                Alert.alert("✓ Paiement effectué", "Paiement réalisé avec succès !");
+                                markAsRead(notif.id);
+                            },
+                        },
+                        {
+                            text: "Rappeler plus tard",
+                            onPress: () => Alert.alert("⏰ Rappel", "Rappel programmé dans 1 jour"),
+                        },
+                        { text: "Annuler", style: "cancel" },
+                    ]
+                );
+                break;
+            case "goal":
+                Alert.alert(
+                    "Objectif d'épargne",
+                    "Ajouter plus à votre épargne ?",
+                    [
+                        {
+                            text: "Ajouter 10,000 Ar",
+                            onPress: () => Alert.alert("✓ Épargne", "10,000 Ar ajoutés à votre objectif !"),
+                        },
+                        {
+                            text: "Ajouter 50,000 Ar",
+                            onPress: () => Alert.alert("✓ Épargne", "50,000 Ar ajoutés à votre objectif !"),
+                        },
+                        {
+                            text: "Voir l'objectif",
+                            onPress: () => Alert.alert("Navigation", "Redirection vers vos objectifs..."),
+                        },
+                        { text: "Annuler", style: "cancel" },
+                    ]
+                );
+                break;
+            case "transaction":
+                Alert.alert(
+                    "Transaction",
+                    "Options de transaction",
+                    [
+                        {
+                            text: "Voir détails",
+                            onPress: () => Alert.alert("Détails", "Affichage des détails de la transaction..."),
+                        },
+                        {
+                            text: "Modifier",
+                            onPress: () => Alert.alert("Modification", "Modifier la transaction..."),
+                        },
+                        { text: "Annuler", style: "cancel" },
+                    ]
+                );
+                break;
+            case "insight":
+                Alert.alert(
+                    "Conseil financier",
+                    "Voulez-vous voir plus de conseils personnalisés ?",
+                    [
+                        {
+                            text: "Voir les conseils",
+                            onPress: () => Alert.alert("Conseils", "Redirection vers vos conseils..."),
+                        },
+                        { text: "Plus tard", style: "cancel" },
+                    ]
+                );
+                break;
+        }
+    };
+
+    const snoozeNotification = (id: string) => {
+        Alert.alert(
+            "Reporter la notification",
+            "Quand souhaitez-vous être rappelé ?",
+            [
+                {
+                    text: "Dans 1 heure",
+                    onPress: () => {
+                        Alert.alert("⏰ Rappel programmé", "Vous serez rappelé dans 1 heure");
+                        markAsRead(id);
+                    },
+                },
+                {
+                    text: "Demain",
+                    onPress: () => {
+                        Alert.alert("⏰ Rappel programmé", "Vous serez rappelé demain");
+                        markAsRead(id);
+                    },
+                },
+                {
+                    text: "Dans 3 jours",
+                    onPress: () => {
+                        Alert.alert("⏰ Rappel programmé", "Vous serez rappelé dans 3 jours");
+                        markAsRead(id);
+                    },
+                },
+                { text: "Annuler", style: "cancel" },
+            ]
+        );
+    };
+
+    const shareNotification = (notif: Notification) => {
+        Alert.alert(
+            "Partager",
+            `Partager "${notif.title}" ?`,
+            [
+                {
+                    text: "Par email",
+                    onPress: () => Alert.alert("📧 Email", "Ouverture de l'application email..."),
+                },
+                {
+                    text: "Par SMS",
+                    onPress: () => Alert.alert("💬 SMS", "Ouverture de l'application SMS..."),
+                },
+                {
+                    text: "Copier",
+                    onPress: () => Alert.alert("✓ Copié", "Texte copié dans le presse-papiers"),
+                },
+                { text: "Annuler", style: "cancel" },
+            ]
+        );
+    };
+
+    const muteNotificationType = (type: string) => {
+        Alert.alert(
+            "Désactiver les notifications",
+            `Désactiver temporairement les notifications "${type}" ?`,
+            [
+                {
+                    text: "Pour 1 heure",
+                    onPress: () => Alert.alert("🔕 Désactivé", "Notifications désactivées pour 1 heure"),
+                },
+                {
+                    text: "Pour 24 heures",
+                    onPress: () => Alert.alert("🔕 Désactivé", "Notifications désactivées pour 24 heures"),
+                },
+                {
+                    text: "Définitivement",
+                    onPress: () => Alert.alert("🔕 Désactivé", "Vous pouvez réactiver dans les paramètres"),
+                },
+                { text: "Annuler", style: "cancel" },
+            ]
+        );
+    };
+
+    const groupedNotifications = filteredNotifications.reduce((groups, notif) => {
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
@@ -277,346 +458,258 @@ export default function NotificationsPage() {
         return groups;
     }, {} as Record<string, Notification[]>);
 
+    const filterOptions = [
+        { type: null, label: "Toutes", icon: "notifications", color: Colors.primary },
+        { type: "budget", label: "Budget", icon: "alert-circle", color: "#FF6B6B" },
+        { type: "bill", label: "Factures", icon: "calendar", color: "#F59E0B" },
+        { type: "goal", label: "Objectifs", icon: "trophy", color: "#4ADE80" },
+        { type: "transaction", label: "Transactions", icon: "receipt", color: "#6366F1" },
+        { type: "insight", label: "Conseils", icon: "bulb", color: "#22D3EE" },
+    ];
+
     if (showSettings) {
         return (
             <ThemedSafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-                {/* Settings Header */}
-                <View style={styles.settingsHeader}>
-                    <TouchableOpacity onPress={() => setShowSettings(false)}>
-                        <Ionicons name="arrow-back" size={24} color={theme.text} />
+                <View style={[styles.settingsHeader, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
+                    <TouchableOpacity
+                        onPress={() => setShowSettings(false)}
+                        style={styles.backButton}
+                    >
+                        <Ionicons name="chevron-back" size={18} color={Colors.primary} />
                     </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: theme.text }]}>Paramètres</Text>
-                    <View style={{ width: 24 }} />
+                    <Text style={[styles.settingsTitle, { color: theme.text }]}>Paramètres</Text>
+                    <View style={{ width: 40 }} />
                 </View>
+
                 <ScrollView
                     style={styles.content}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 120 }}
+                    contentContainerStyle={{ paddingBottom: 40 }}
                 >
                     {/* Types de notifications */}
-                    <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Types de notifications
-                        </Text>
-                        <View
-                            style={[
-                                styles.settingCard,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingLeft}>
-                                    <Ionicons
-                                        name="alert-circle"
-                                        size={22}
-                                        color="#FF6B6B"
-                                    />
-                                    <View>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Alertes budget
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            Budget dépassé ou proche
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={settings.budgetAlerts}
-                                    onValueChange={(v) => updateSetting("budgetAlerts", v)}
-                                    trackColor={{ false: "#767577", true: Colors.primary }}
-                                    thumbColor="#FFF"
-                                />
-                            </View>
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingLeft}>
-                                    <Ionicons name="calendar" size={22} color="#F59E0B" />
-                                    <View>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Rappels factures
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            Factures à payer
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={settings.billReminders}
-                                    onValueChange={(v) => updateSetting("billReminders", v)}
-                                    trackColor={{ false: "#767577", true: Colors.primary }}
-                                    thumbColor="#FFF"
-                                />
-                            </View>
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingLeft}>
-                                    <Ionicons name="trophy" size={22} color="#4ADE80" />
-                                    <View>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Objectifs d'épargne
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            Progression et succès
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={settings.goalUpdates}
-                                    onValueChange={(v) => updateSetting("goalUpdates", v)}
-                                    trackColor={{ false: "#767577", true: Colors.primary }}
-                                    thumbColor="#FFF"
-                                />
-                            </View>
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingLeft}>
-                                    <Ionicons name="receipt" size={22} color="#6366F1" />
-                                    <View>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Transactions
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            Nouvelles transactions
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={settings.transactionAlerts}
-                                    onValueChange={(v) => updateSetting("transactionAlerts", v)}
-                                    trackColor={{ false: "#767577", true: Colors.primary }}
-                                    thumbColor="#FFF"
-                                />
-                            </View>
+                    <View style={styles.settingsSection}>
+                        <View style={styles.sectionHeaderSettings}>
+                            <Ionicons name="notifications" size={22} color={Colors.primary} />
+                            <Text style={[styles.sectionTitleSettings, { color: theme.text }]}>
+                                Types de notifications
+                            </Text>
+                        </View>
+                        <View style={[styles.settingCard, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
+                            <SettingRow
+                                icon="alert-circle"
+                                iconColor="#FF6B6B"
+                                title="Alertes budget"
+                                subtitle="Budget dépassé ou proche"
+                                value={settings.budgetAlerts}
+                                onValueChange={(v: boolean) => updateSetting("budgetAlerts", v)}
+                                theme={theme}
+                            />
+                            <SettingRow
+                                icon="calendar"
+                                iconColor="#F59E0B"
+                                title="Rappels factures"
+                                subtitle="Factures à payer"
+                                value={settings.billReminders}
+                                onValueChange={(v: boolean) => updateSetting("billReminders", v)}
+                                theme={theme}
+                            />
+                            <SettingRow
+                                icon="trophy"
+                                iconColor="#4ADE80"
+                                title="Objectifs d'épargne"
+                                subtitle="Progression et succès"
+                                value={settings.goalUpdates}
+                                onValueChange={(v: boolean) => updateSetting("goalUpdates", v)}
+                                theme={theme}
+                            />
+                            <SettingRow
+                                icon="receipt"
+                                iconColor="#6366F1"
+                                title="Transactions"
+                                subtitle="Nouvelles transactions"
+                                value={settings.transactionAlerts}
+                                onValueChange={(v: boolean) => updateSetting("transactionAlerts", v)}
+                                theme={theme}
+                                isLast
+                            />
                         </View>
                     </View>
+
                     {/* Rapports */}
-                    <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Rapports périodiques
-                        </Text>
-                        <View
-                            style={[
-                                styles.settingCard,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingLeft}>
-                                    <Ionicons name="document-text" size={22} color="#22D3EE" />
-                                    <View>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Rapport hebdomadaire
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            Tous les lundis
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={settings.weeklyReports}
-                                    onValueChange={(v) => updateSetting("weeklyReports", v)}
-                                    trackColor={{ false: "#767577", true: Colors.primary }}
-                                    thumbColor="#FFF"
-                                />
-                            </View>
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingLeft}>
-                                    <Ionicons name="calendar" size={22} color="#A78BFA" />
-                                    <View>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Rapport mensuel
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            Le 1er de chaque mois
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={settings.monthlyReports}
-                                    onValueChange={(v) => updateSetting("monthlyReports", v)}
-                                    trackColor={{ false: "#767577", true: Colors.primary }}
-                                    thumbColor="#FFF"
-                                />
-                            </View>
+                    <View style={styles.settingsSection}>
+                        <View style={styles.sectionHeaderSettings}>
+                            <Ionicons name="document-text" size={22} color={Colors.primary} />
+                            <Text style={[styles.sectionTitleSettings, { color: theme.text }]}>
+                                Rapports périodiques
+                            </Text>
+                        </View>
+                        <View style={[styles.settingCard, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
+                            <SettingRow
+                                icon="calendar-outline"
+                                iconColor="#22D3EE"
+                                title="Rapport hebdomadaire"
+                                subtitle="Tous les lundis"
+                                value={settings.weeklyReports}
+                                onValueChange={(v: boolean) => updateSetting("weeklyReports", v)}
+                                theme={theme}
+                            />
+                            <SettingRow
+                                icon="calendar"
+                                iconColor="#A78BFA"
+                                title="Rapport mensuel"
+                                subtitle="Le 1er de chaque mois"
+                                value={settings.monthlyReports}
+                                onValueChange={(v: boolean) => updateSetting("monthlyReports", v)}
+                                theme={theme}
+                                isLast
+                            />
                         </View>
                     </View>
+
                     {/* Canaux */}
-                    <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Canaux de notification
-                        </Text>
-                        <View
-                            style={[
-                                styles.settingCard,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingLeft}>
-                                    <Ionicons name="notifications" size={22} color={Colors.primary} />
-                                    <View>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Notifications push
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            Sur votre appareil
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={settings.pushNotifications}
-                                    onValueChange={(v) => updateSetting("pushNotifications", v)}
-                                    trackColor={{ false: "#767577", true: Colors.primary }}
-                                    thumbColor="#FFF"
-                                />
-                            </View>
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingLeft}>
-                                    <Ionicons name="mail" size={22} color={Colors.primary} />
-                                    <View>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Notifications email
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            Par email
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={settings.emailNotifications}
-                                    onValueChange={(v) => updateSetting("emailNotifications", v)}
-                                    trackColor={{ false: "#767577", true: Colors.primary }}
-                                    thumbColor="#FFF"
-                                />
-                            </View>
+                    <View style={styles.settingsSection}>
+                        <View style={styles.sectionHeaderSettings}>
+                            <Ionicons name="send" size={22} color={Colors.primary} />
+                            <Text style={[styles.sectionTitleSettings, { color: theme.text }]}>
+                                Canaux de notification
+                            </Text>
+                        </View>
+                        <View style={[styles.settingCard, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
+                            <SettingRow
+                                icon="phone-portrait"
+                                iconColor={Colors.primary}
+                                title="Notifications push"
+                                subtitle="Sur votre appareil"
+                                value={settings.pushNotifications}
+                                onValueChange={(v: boolean) => updateSetting("pushNotifications", v)}
+                                theme={theme}
+                            />
+                            <SettingRow
+                                icon="mail"
+                                iconColor={Colors.primary}
+                                title="Notifications email"
+                                subtitle="Par email"
+                                value={settings.emailNotifications}
+                                onValueChange={(v: boolean) => updateSetting("emailNotifications", v)}
+                                theme={theme}
+                                isLast
+                            />
                         </View>
                     </View>
+
                     {/* Préférences */}
-                    <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Préférences
-                        </Text>
-                        <View
-                            style={[
-                                styles.settingCard,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <TouchableOpacity style={styles.settingRow} onPress={() => openModal('billReminderDays')}>
+                    <View style={styles.settingsSection}>
+                        <View style={styles.sectionHeaderSettings}>
+                            <Ionicons name="options" size={22} color={Colors.primary} />
+                            <Text style={[styles.sectionTitleSettings, { color: theme.text }]}>
+                                Préférences avancées
+                            </Text>
+                        </View>
+                        <View style={[styles.settingCard, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
+                            <TouchableOpacity
+                                style={styles.settingRowClickable}
+                                onPress={() => openModal('billReminderDays')}
+                                activeOpacity={0.7}
+                            >
                                 <View style={styles.settingLeft}>
-                                    <Ionicons name="time" size={22} color={Colors.primary} />
-                                    <View>
+                                    <View style={[styles.settingIconContainer, { backgroundColor: Colors.primary + "20" }]}>
+                                        <Ionicons name="time" size={22} color={Colors.primary} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
                                         <Text style={[styles.settingTitle, { color: theme.text }]}>
                                             Rappel factures
                                         </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
+                                        <Text style={[styles.settingSubtitle, { color: theme.text }]}>
                                             {settings.billReminderDays} jours avant l'échéance
                                         </Text>
                                     </View>
                                 </View>
-                                <Ionicons
-                                    name="chevron-forward"
-                                    size={20}
-                                    color={theme.text}
-                                />
+                                <Ionicons name="chevron-forward" size={20} color={theme.text} style={{ opacity: 0.4 }} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.settingRow} onPress={() => openModal('budgetThreshold')}>
+
+                            <View style={[styles.divider, { backgroundColor: theme.text + "15" }]} />
+
+                            <TouchableOpacity
+                                style={styles.settingRowClickable}
+                                onPress={() => openModal('budgetThreshold')}
+                                activeOpacity={0.7}
+                            >
                                 <View style={styles.settingLeft}>
-                                    <Ionicons name="speedometer" size={22} color={Colors.primary} />
-                                    <View>
+                                    <View style={[styles.settingIconContainer, { backgroundColor: Colors.primary + "20" }]}>
+                                        <Ionicons name="speedometer" size={22} color={Colors.primary} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
                                         <Text style={[styles.settingTitle, { color: theme.text }]}>
                                             Seuil d'alerte budget
                                         </Text>
-                                        <Text
-                                            style={[
-                                                styles.settingSubtitle,
-                                                { color: theme.text },
-                                            ]}
-                                        >
+                                        <Text style={[styles.settingSubtitle, { color: theme.text }]}>
                                             Alerter à {settings.budgetThreshold}%
                                         </Text>
                                     </View>
                                 </View>
-                                <Ionicons
-                                    name="chevron-forward"
-                                    size={20}
-                                    color={theme.text}
-                                />
+                                <Ionicons name="chevron-forward" size={20} color={theme.text} style={{ opacity: 0.4 }} />
                             </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>
-                {/* Modale pour modifier les préférences */}
+
+                {/* Modal pour modifier les préférences */}
                 <Modal
                     visible={modalVisible}
                     transparent={true}
-                    animationType="slide"
+                    animationType="fade"
                     onRequestClose={() => setModalVisible(false)}
                 >
                     <View style={styles.modalContainer}>
                         <View style={[styles.modalContent, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
+                            <View style={styles.modalHandle} />
                             <Text style={[styles.modalTitle, { color: theme.text }]}>
-                                Modifier {currentSetting?.key === 'billReminderDays' ? 'le rappel des factures' : 'le seuil d\'alerte'}
+                                {currentSetting?.key === 'billReminderDays'
+                                    ? 'Rappel des factures'
+                                    : 'Seuil d\'alerte budget'}
                             </Text>
-                            <TextInput
-                                style={[styles.modalInput, { color: theme.text, borderColor: theme.text }]}
-                                keyboardType="numeric"
-                                value={currentSetting?.value.toString()}
-                                onChangeText={(text) => {
-                                    const num = parseInt(text, 10) || 0;
-                                    if (currentSetting) {
-                                        setCurrentSetting({ ...currentSetting, value: num });
-                                    }
-                                }}
-                            />
-                            <TouchableOpacity
-                                style={styles.modalButton}
-                                onPress={() => handleSaveModal(currentSetting?.value)}
-                            >
-                                <Text style={styles.modalButtonText}>Enregistrer</Text>
-                            </TouchableOpacity>
+                            <Text style={[styles.modalDescription, { color: theme.text }]}>
+                                {currentSetting?.key === 'billReminderDays'
+                                    ? 'Nombre de jours avant l\'échéance'
+                                    : 'Pourcentage du budget à atteindre'}
+                            </Text>
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={[styles.modalInput, {
+                                        color: theme.text,
+                                        backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A"
+                                    }]}
+                                    keyboardType="numeric"
+                                    value={currentSetting?.value.toString()}
+                                    onChangeText={(text) => {
+                                        const num = parseInt(text, 10) || 0;
+                                        if (currentSetting) {
+                                            setCurrentSetting({ ...currentSetting, value: num });
+                                        }
+                                    }}
+                                    placeholder={currentSetting?.key === 'billReminderDays' ? "3" : "90"}
+                                    placeholderTextColor={theme.text + "60"}
+                                />
+                                <Text style={[styles.inputSuffix, { color: theme.text }]}>
+                                    {currentSetting?.key === 'billReminderDays' ? 'jours' : '%'}
+                                </Text>
+                            </View>
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A" }]}
+                                    onPress={() => setModalVisible(false)}
+                                >
+                                    <Text style={[styles.modalButtonTextSecondary, { color: theme.text }]}>
+                                        Annuler
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.modalButtonPrimary]}
+                                    onPress={() => handleSaveModal(currentSetting?.value)}
+                                >
+                                    <Text style={styles.modalButtonTextPrimary}>Enregistrer</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 </Modal>
@@ -625,26 +718,44 @@ export default function NotificationsPage() {
     }
 
     return (
-        <ThemedSafeAreaView>
-            {/* Header */}
-            <ThemedScrollView >
-                <ThemedView style={{ paddingHorizontal: 20, width: "100%", height: 180, backgroundColor: Colors.primary, }}>
-                    <ImageBackground source={Image.starBG} style={{ width: "100%", height: "100%", justifyContent: "center", }}>
+        <ThemedSafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <ThemedScrollView showsVerticalScrollIndicator={false}>
+                {/* Header Moderne */}
+                <LinearGradient
+                    colors={[Colors.primary, '#4ADE80', '#6366f1']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }} style={styles.headerContainer}>
+                    <ImageBackground
+                        source={Image.starBG}
+                        style={styles.headerBackground}
+                    >
                         <View style={styles.headerTop}>
-                            <View>
+                            <View style={{ flex: 1 }}>
                                 <Text style={styles.headerTitle}>Notifications</Text>
-                                <Text style={styles.headerSubtitle}>
-                                    {unreadCount} non {unreadCount > 1 ? "lues" : "lue"}
-                                    {highPriorityCount > 0 && ` • ${highPriorityCount} urgente(s)`}
-                                </Text>
+                                <View style={styles.headerStats}>
+                                    <View style={styles.statBadge}>
+                                        <Text style={styles.statNumber}>{unreadCount}</Text>
+                                        <Text style={styles.statLabel}>non lues</Text>
+                                    </View>
+                                    {highPriorityCount > 0 && (
+                                        <View style={[styles.statBadge, styles.urgentBadge]}>
+                                            <Ionicons name="flame" size={14} color="#FF6B6B" />
+                                            <Text style={[styles.statNumber, { color: "#FF6B6B" }]}>
+                                                {highPriorityCount}
+                                            </Text>
+                                            <Text style={[styles.statLabel, { color: "#FF6B6B" }]}>urgentes</Text>
+                                        </View>
+                                    )}
+                                </View>
                             </View>
                             <TouchableOpacity
                                 style={styles.settingsButton}
                                 onPress={() => setShowSettings(true)}
                             >
-                                <Ionicons name="settings" size={24} color="#FFF" />
+                                <Ionicons name="settings-outline" size={24} color="#FFF" />
                             </TouchableOpacity>
                         </View>
+
                         {/* Actions rapides */}
                         {unreadCount > 0 && (
                             <View style={styles.quickActions}>
@@ -653,21 +764,219 @@ export default function NotificationsPage() {
                                     onPress={markAllAsRead}
                                 >
                                     <Ionicons name="checkmark-done" size={18} color="#FFF" />
-                                    <Text style={styles.quickActionText}>Tout marquer lu</Text>
+                                    <Text style={styles.quickActionText}>Tout lire</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.quickActionButton} onPress={clearAll}>
-                                    <Ionicons name="trash" size={18} color="#FFF" />
-                                    <Text style={styles.quickActionText}>Tout effacer</Text>
+                                    <Ionicons name="trash-outline" size={18} color="#FFF" />
+                                    <Text style={styles.quickActionText}>Effacer</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
+
+                        {/* Bouton Export et Options */}
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity
+                                style={styles.headerActionButton}
+                                onPress={() => {
+                                    Alert.alert(
+                                        "Exporter les notifications",
+                                        "Choisissez un format",
+                                        [
+                                            {
+                                                text: "PDF",
+                                                onPress: () => Alert.alert("📄 Export", "Export en PDF en cours..."),
+                                            },
+                                            {
+                                                text: "CSV",
+                                                onPress: () => Alert.alert("📊 Export", "Export en CSV en cours..."),
+                                            },
+                                            {
+                                                text: "Email",
+                                                onPress: () => Alert.alert("📧 Email", "Envoi par email..."),
+                                            },
+                                            { text: "Annuler", style: "cancel" },
+                                        ]
+                                    );
+                                }}
+                            >
+                                <Ionicons name="download-outline" size={18} color="#FFF" />
+                                <Text style={styles.headerActionText}>Export</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.headerActionButton}
+                                onPress={() => {
+                                    Alert.alert(
+                                        "Options avancées",
+                                        "Choisissez une action",
+                                        [
+                                            {
+                                                text: "Archiver les anciennes",
+                                                onPress: () => {
+                                                    const now = new Date();
+                                                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                                                    setNotifications(
+                                                        notifications.filter((n) => n.time >= weekAgo)
+                                                    );
+                                                    Alert.alert("✓ Archivé", "Notifications de plus de 7 jours archivées");
+                                                },
+                                            },
+                                            {
+                                                text: "Mode Ne pas déranger",
+                                                onPress: () => {
+                                                    Alert.alert(
+                                                        "Ne pas déranger",
+                                                        "Durée ?",
+                                                        [
+                                                            {
+                                                                text: "1 heure",
+                                                                onPress: () => Alert.alert("🔕 Activé", "Notifications muettes pour 1h"),
+                                                            },
+                                                            {
+                                                                text: "Jusqu'à demain",
+                                                                onPress: () => Alert.alert("🔕 Activé", "Notifications muettes jusqu'à demain"),
+                                                            },
+                                                            { text: "Annuler", style: "cancel" },
+                                                        ]
+                                                    );
+                                                },
+                                            },
+                                            {
+                                                text: "Statistiques",
+                                                onPress: () => {
+                                                    const stats = {
+                                                        total: notifications.length,
+                                                        lues: notifications.filter(n => n.read).length,
+                                                        nonLues: notifications.filter(n => !n.read).length,
+                                                        urgentes: notifications.filter(n => n.priority === "high").length,
+                                                    };
+                                                    Alert.alert(
+                                                        "📊 Statistiques",
+                                                        `Total: ${stats.total}\nLues: ${stats.lues}\nNon lues: ${stats.nonLues}\nUrgentes: ${stats.urgentes}`
+                                                    );
+                                                },
+                                            },
+                                            { text: "Annuler", style: "cancel" },
+                                        ]
+                                    );
+                                }}
+                            >
+                                <Ionicons name="ellipsis-horizontal" size={18} color="#FFF" />
+                                <Text style={styles.headerActionText}>Plus</Text>
+                            </TouchableOpacity>
+                        </View>
                     </ImageBackground>
-                </ThemedView>
-                <View
-                    style={styles.content}
+                </LinearGradient>
+
+                {/* Filtres */}
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.filtersContainer}
+                    contentContainerStyle={styles.filtersContent}
                 >
+                    {filterOptions.map((option) => (
+                        <TouchableOpacity
+                            key={option.type || "all"}
+                            style={[
+                                styles.filterChip,
+                                {
+                                    backgroundColor: filterType === option.type
+                                        ? option.color
+                                        : isLight ? "#F5F5F5" : "#2A2A2A",
+                                },
+                            ]}
+                            onPress={() => setFilterType(option.type)}
+                            onLongPress={() => {
+                                if (option.type) {
+                                    Alert.alert(
+                                        "Options de filtre",
+                                        `Gérer les notifications "${option.label}"`,
+                                        [
+                                            {
+                                                text: "Désactiver temporairement",
+                                                onPress: () => muteNotificationType(option.label),
+                                            },
+                                            {
+                                                text: "Tout marquer comme lu",
+                                                onPress: () => {
+                                                    setNotifications(
+                                                        notifications.map((n) =>
+                                                            n.type === option.type ? { ...n, read: true } : n
+                                                        )
+                                                    );
+                                                    Alert.alert("✓ Succès", `Toutes les notifications "${option.label}" sont marquées comme lues`);
+                                                },
+                                            },
+                                            {
+                                                text: "Tout supprimer",
+                                                style: "destructive",
+                                                onPress: () => {
+                                                    Alert.alert(
+                                                        "Confirmer",
+                                                        `Supprimer toutes les notifications "${option.label}" ?`,
+                                                        [
+                                                            { text: "Annuler", style: "cancel" },
+                                                            {
+                                                                text: "Supprimer",
+                                                                style: "destructive",
+                                                                onPress: () => {
+                                                                    setNotifications(
+                                                                        notifications.filter((n) => n.type !== option.type)
+                                                                    );
+                                                                    Alert.alert("✓ Supprimé", `Notifications "${option.label}" supprimées`);
+                                                                },
+                                                            },
+                                                        ]
+                                                    );
+                                                },
+                                            },
+                                            { text: "Annuler", style: "cancel" },
+                                        ]
+                                    );
+                                }
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons
+                                name={option.icon as any}
+                                size={18}
+                                color={filterType === option.type ? "#FFF" : option.color}
+                            />
+                            <Text
+                                style={[
+                                    styles.filterText,
+                                    {
+                                        color: filterType === option.type ? "#FFF" : theme.text,
+                                    },
+                                ]}
+                            >
+                                {option.label}
+                            </Text>
+                            {option.type && (
+                                <View style={[
+                                    styles.filterBadge,
+                                    {
+                                        backgroundColor: filterType === option.type
+                                            ? "rgba(255, 255, 255, 0.3)"
+                                            : option.color + "30"
+                                    }
+                                ]}>
+                                    <Text style={[
+                                        styles.filterBadgeText,
+                                        { color: filterType === option.type ? "#FFF" : option.color }
+                                    ]}>
+                                        {notifications.filter(n => n.type === option.type && !n.read).length}
+                                    </Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                {/* Liste des notifications */}
+                <View style={styles.notificationsContent}>
                     {Object.entries(groupedNotifications).map(([dateKey, notifs]) => (
-                        <View key={dateKey} style={styles.section}>
+                        <View key={dateKey} style={styles.notificationGroup}>
                             <Text style={[styles.dateHeader, { color: theme.text }]}>
                                 {dateKey}
                             </Text>
@@ -678,23 +987,46 @@ export default function NotificationsPage() {
                                         styles.notificationCard,
                                         {
                                             backgroundColor: isLight ? "#FFF" : "#1F1F1F",
-                                            opacity: notif.read ? 0.7 : 1,
+                                            opacity: notif.read ? 0.6 : 1,
                                         },
                                     ]}
                                     onPress={() => markAsRead(notif.id)}
-                                    onLongPress={() => deleteNotification(notif.id)}
+                                    onLongPress={() => {
+                                        Alert.alert(
+                                            "Options",
+                                            `Actions pour "${notif.title}"`,
+                                            [
+                                                {
+                                                    text: "Supprimer",
+                                                    style: "destructive",
+                                                    onPress: () => deleteNotification(notif.id),
+                                                },
+                                                {
+                                                    text: "Reporter",
+                                                    onPress: () => snoozeNotification(notif.id),
+                                                },
+                                                {
+                                                    text: "Partager",
+                                                    onPress: () => shareNotification(notif),
+                                                },
+                                                {
+                                                    text: notif.read ? "Marquer non lu" : "Marquer lu",
+                                                    onPress: () => {
+                                                        setNotifications(
+                                                            notifications.map((n) =>
+                                                                n.id === notif.id ? { ...n, read: !n.read } : n
+                                                            )
+                                                        );
+                                                    },
+                                                },
+                                                { text: "Annuler", style: "cancel" },
+                                            ]
+                                        );
+                                    }}
+                                    activeOpacity={0.7}
                                 >
-                                    <View
-                                        style={[
-                                            styles.notifIcon,
-                                            { backgroundColor: notif.color + "20" },
-                                        ]}
-                                    >
-                                        <Ionicons
-                                            name={notif.icon as any}
-                                            size={24}
-                                            color={notif.color}
-                                        />
+                                    <View style={[styles.notifIcon, { backgroundColor: notif.color + "20" }]}>
+                                        <Ionicons name={notif.icon as any} size={24} color={notif.color} />
                                     </View>
                                     <View style={styles.notifContent}>
                                         <View style={styles.notifHeader}>
@@ -704,54 +1036,57 @@ export default function NotificationsPage() {
                                                     { color: theme.text },
                                                     !notif.read && styles.notifTitleUnread,
                                                 ]}
+                                                numberOfLines={1}
                                             >
                                                 {notif.title}
                                             </Text>
                                             {!notif.read && <View style={styles.unreadDot} />}
                                         </View>
-                                        <Text
-                                            style={[styles.notifMessage, { color: theme.text }]}
-                                        >
+                                        <Text style={[styles.notifMessage, { color: theme.text }]} numberOfLines={2}>
                                             {notif.message}
                                         </Text>
                                         <View style={styles.notifFooter}>
-                                            <Text style={[styles.notifTime, { color: theme.text }]}>
-                                                {formatTimeAgo(notif.time)}
-                                            </Text>
-                                            {notif.priority === "high" && (
-                                                <View style={styles.priorityBadge}>
-                                                    <Ionicons name="flame" size={12} color="#FF6B6B" />
-                                                    <Text style={styles.priorityText}>Urgent</Text>
-                                                </View>
-                                            )}
-                                            {notif.actionable && (
-                                                <TouchableOpacity style={styles.actionButton}>
-                                                    <Text style={styles.actionButtonText}>Agir</Text>
-                                                    <Ionicons
-                                                        name="arrow-forward"
-                                                        size={14}
-                                                        color={Colors.primary}
-                                                    />
-                                                </TouchableOpacity>
-                                            )}
+                                            <View style={styles.footerLeft}>
+                                                <Ionicons name="time-outline" size={14} color={theme.text} style={{ opacity: 0.6 }} />
+                                                <Text style={[styles.notifTime, { color: theme.text }]}>
+                                                    {formatTimeAgo(notif.time)}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.footerRight}>
+                                                {notif.priority === "high" && (
+                                                    <View style={styles.priorityBadge}>
+                                                        <Ionicons name="flame" size={12} color="#FF6B6B" />
+                                                        <Text style={styles.priorityText}>Urgent</Text>
+                                                    </View>
+                                                )}
+                                                {notif.actionable && (
+                                                    <TouchableOpacity
+                                                        style={styles.actionButton}
+                                                        onPress={() => handleNotificationAction(notif)}
+                                                    >
+                                                        <Text style={styles.actionButtonText}>Agir</Text>
+                                                        <Ionicons name="arrow-forward" size={14} color={Colors.primary} />
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
                                         </View>
                                     </View>
+                                    <View style={[styles.cardIndicator, { backgroundColor: notif.color }]} />
                                 </TouchableOpacity>
                             ))}
                         </View>
                     ))}
-                    {notifications.length === 0 && (
+
+                    {filteredNotifications.length === 0 && (
                         <View style={styles.emptyState}>
-                            <Ionicons
-                                name="notifications-off-outline"
-                                size={64}
-                                color={theme.text}
-                            />
+                            <View style={[styles.emptyIcon, { backgroundColor: Colors.primary + "20" }]}>
+                                <Ionicons name="notifications-off-outline" size={64} color={Colors.primary} />
+                            </View>
                             <Text style={[styles.emptyText, { color: theme.text }]}>
                                 Aucune notification
                             </Text>
                             <Text style={[styles.emptySubtext, { color: theme.text }]}>
-                                Vous êtes à jour !
+                                Vous êtes à jour ! 🎉
                             </Text>
                         </View>
                     )}
@@ -761,244 +1096,31 @@ export default function NotificationsPage() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        paddingTop: 60,
-        paddingBottom: 24,
-        paddingHorizontal: 24,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
-    },
-    headerTop: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        marginBottom: 16,
-    },
-    headerTitle: {
-        fontSize: 28,
-        fontWeight: "bold",
-        marginBottom: 4,
-        color: "#FFF",
-    },
-    headerSubtitle: {
-        fontSize: 14,
-        color: "#FFF",
-        opacity: 0.9,
-    },
-    settingsButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    quickActions: {
-        flexDirection: "row",
-        gap: 12,
-    },
-    quickActionButton: {
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
-        paddingVertical: 12,
-        borderRadius: 6,
-    },
-    quickActionText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#FFF",
-    },
-    content: {
-        flex: 1,
-    },
-    section: {
-        paddingHorizontal: 24,
-        marginTop: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        marginBottom: 16,
-    },
-    dateHeader: {
-        fontSize: 14,
-        fontWeight: "600",
-        marginBottom: 12,
-        textTransform: "uppercase",
-    },
-    notificationCard: {
-        flexDirection: "row",
-        padding: 16,
-        borderRadius: 6,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderLeftWidth: 1,
-        borderColor: "rgba(153, 153, 153, 0.2)",
-    },
-    notifIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 12,
-    },
-    notifContent: {
-        flex: 1,
-    },
-    notifHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 6,
-    },
-    notifTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        flex: 1,
-    },
-    notifTitleUnread: {
-        fontWeight: "700",
-    },
-    unreadDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: Colors.primary,
-        marginLeft: 8,
-    },
-    notifMessage: {
-        fontSize: 14,
-        lineHeight: 20,
-        marginBottom: 8,
-    },
-    notifFooter: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        flexWrap: "wrap",
-    },
-    notifTime: {
-        fontSize: 12,
-    },
-    priorityBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        backgroundColor: "#FF6B6B20",
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    priorityText: {
-        fontSize: 11,
-        fontWeight: "700",
-        color: "#FF6B6B",
-    },
-    actionButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        backgroundColor: Colors.primary + "20",
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-        marginLeft: "auto",
-    },
-    actionButtonText: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: Colors.primary,
-    },
-    emptyState: {
-        alignItems: "center",
-        paddingVertical: 80,
-    },
-    emptyText: {
-        fontSize: 18,
-        fontWeight: "600",
-        marginTop: 16,
-        marginBottom: 8,
-    },
-    emptySubtext: {
-        fontSize: 14,
-        textAlign: "center",
-    },
-    settingsHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: 24
-    },
-    settingCard: {
-        borderRadius: 6,
-        borderWidth: 1,
-        borderLeftWidth: 1,
-        borderColor: "#99999933",
-        overflow: "hidden",
-    },
-    settingRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: "#99999933",
-    },
-    settingLeft: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        flex: 1,
-    },
-    settingTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        marginBottom: 2,
-    },
-    settingSubtitle: {
-        fontSize: 13,
-    },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-        width: '80%',
-        padding: 20,
-        borderRadius: 10,
-        alignItems: 'center',
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    modalInput: {
-        width: '100%',
-        padding: 10,
-        borderWidth: 1,
-        borderRadius: 5,
-        marginBottom: 10,
-    },
-    modalButton: {
-        backgroundColor: Colors.primary,
-        padding: 10,
-        borderRadius: 5,
-        width: '100%',
-        alignItems: 'center',
-    },
-    modalButtonText: {
-        color: '#FFF',
-        fontWeight: 'bold',
-    },
-});
+// Composant pour les lignes de paramètres
+const SettingRow = ({ icon, iconColor, title, subtitle, value, onValueChange, theme, isLast = false }: any) => (
+    <>
+        <View style={styles.settingRowContainer}>
+            <View style={styles.settingLeft}>
+                <View style={[styles.settingIconContainer, { backgroundColor: iconColor + "20" }]}>
+                    <Ionicons name={icon as any} size={22} color={iconColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                    <Text style={[styles.settingTitle, { color: theme.text }]}>
+                        {title}
+                    </Text>
+                    <Text style={[styles.settingSubtitle, { color: theme.text }]}>
+                        {subtitle}
+                    </Text>
+                </View>
+            </View>
+            <Switch
+                value={value}
+                onValueChange={onValueChange}
+                trackColor={{ false: "#767577", true: Colors.primary }}
+                thumbColor="#FFF"
+                ios_backgroundColor="#767577"
+            />
+        </View>
+        {!isLast && <View style={[styles.divider, { backgroundColor: theme.text + "15" }]} />}
+    </>
+);

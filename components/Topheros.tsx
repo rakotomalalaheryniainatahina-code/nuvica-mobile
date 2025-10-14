@@ -22,17 +22,16 @@ const onNotificationPress = () => {
 }
     return (
         <View style={[styles.container, { backgroundColor: theme.background}]}>
-            <View style={styles.leftSection}>
+            <TouchableOpacity onPress={()=> router.push("/dashboard/profile")} style={styles.leftSection}>
                 <Image
                     source={require("@/assets/icons/avatar.jpg")}
                     style={styles.avatar}
                 />
                 <View>
-                    {/* <ThemedText style={[styles.title, {fontWeight: "medium", color: theme.text }]}>Hello !</ThemedText> */}
                     <Greeting />
                     <ThemedText style={[styles.title, { color: theme.text }]}>Rakotomalala</ThemedText>
                 </View>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.rightSection}>
                 <TouchableOpacity onPress={onNotificationPress} style={styles.iconContainer}>

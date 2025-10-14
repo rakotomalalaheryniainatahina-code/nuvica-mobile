@@ -16,15 +16,11 @@ import { Colors } from "@/constant/Colors";
 import { Theme } from "@/types/ColorType";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Progress from "react-native-progress";
-import { PieChart } from "react-native-chart-kit";
-import ThemedScrollView from "@/components/ThemedScrollView";
 import ThemedSafeAreaView from '@/components/ThemedSafeAreaView';
 import TopHeros from "@/components/Topheros";
 import Image from "@/constant/Images";
 import ThemedView from "@/components/ThemedView";
-
-const { width } = Dimensions.get("window");
+import styles from "@/styles/schedule";
 
 // Types
 interface SavingsGoal {
@@ -122,6 +118,14 @@ const calculateSuggestion = (targetAmount: number, currentAmount: number, deadli
     return { monthlyAmount, monthsLeft };
 };
 
+const adjustColorBrightness = (color: string, amount: number): string => {
+    const num = parseInt(color.replace("#", ""), 16);
+    const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+    const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
+    const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+};
+
 export default function SavingsGoalsPage() {
     const colorScheme = useColorScheme();
     const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
@@ -144,6 +148,16 @@ export default function SavingsGoalsPage() {
     const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
     const overallProgress = (totalSaved / totalTarget) * 100;
     const completedGoals = goals.filter(g => g.currentAmount >= g.targetAmount).length;
+
+    function formatNumber(num: number): string {
+        if (num >= 1_000_000) {
+            return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+        }
+        if (num >= 1_000) {
+            return (num / 1_000).toFixed(1).replace(/\.0$/, "") + "k";
+        }
+        return num.toString();
+    }
 
     const handleAddGoal = () => {
         if (!title || !targetAmount || !category) {
@@ -215,74 +229,113 @@ export default function SavingsGoalsPage() {
     };
 
     return (
-        <ThemedSafeAreaView>
+        <ThemedSafeAreaView style={{ backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }}>
             <View style={{ width: "100%", height: "auto", zIndex: 2 }}>
                 <TopHeros />
             </View>
-            {/* Header */}
+
             <ScrollView
-                style={styles.content}
+                style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }]}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 120 }}
             >
-                <ThemedView style={{ width: "100%", height: "auto", backgroundColor: Colors.primary, }}>
-
-                    <ImageBackground source={Image.starBG}
-                        style={styles.header}
+                {/* Modern Header */}
+                <LinearGradient
+                    colors={[Colors.primary, '#4ADE80', '#6366f1']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }} style={styles.headerContainer}>
+                    <ImageBackground
+                        source={Image.starBG}
+                        style={styles.headerBackground}
                     >
-
-                        {/* Vue d'ensemble */}
-                        <View style={styles.overviewCard}>
-                            <View style={styles.overviewRow}>
-                                <View style={styles.overviewItem}>
-                                    <Text style={styles.overviewLabel}>Total épargné</Text>
-                                    <Text style={styles.overviewValue}>{formatCurrency(totalSaved)}</Text>
-                                </View>
-                                <View style={styles.overviewItem}>
-                                    <Text style={styles.overviewLabel}>Objectif total</Text>
-                                    <Text style={styles.overviewValue}>{formatCurrency(totalTarget)}</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.progressContainer}>
-                                <Progress.Bar
-                                    progress={Math.min(overallProgress / 100, 1)}
-                                    width={null}
-                                    height={12}
-                                    color="#4ADE80"
-                                    unfilledColor="rgba(255, 255, 255, 0.2)"
-                                    borderWidth={0}
-                                    borderRadius={6}
-                                />
-                                <Text style={styles.progressText}>
-                                    {overallProgress.toFixed(0)}% accompli
-                                </Text>
-                            </View>
-
-                            <View style={styles.statsRow}>
-                                <View style={styles.statBadge}>
-                                    <Ionicons name="trophy" size={16} color="#FFD700" />
-                                    <Text style={styles.statBadgeText}>
-                                        {completedGoals} objectifs atteints
+                        <View style={styles.headerContent}>
+                            <View style={styles.headerTop}>
+                                <View>
+                                    <Text style={styles.headerTitle}>Objectifs d'Épargne</Text>
+                                    <Text style={styles.headerSubtitle}>
+                                        Suivez vos progrès
                                     </Text>
                                 </View>
-                                <View style={styles.statBadge}>
-                                    <Ionicons name="flag" size={16} color="#22D3EE" />
-                                    <Text style={styles.statBadgeText}>
-                                        {goals.length} objectifs actifs
-                                    </Text>
+                                <TouchableOpacity style={styles.headerIconButton}>
+                                    <Ionicons name="analytics" size={24} color="#FFF" />
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Modern Overview Card */}
+                            <View style={styles.modernOverviewCard}>
+                                <View style={styles.overviewMainInfo}>
+                                    <View style={styles.overviewLeft}>
+                                        <Text style={styles.overviewLabel}>Total épargné</Text>
+                                        <Text style={styles.overviewValue}>
+                                            {formatCurrency(totalSaved)}
+                                        </Text>
+                                        <View style={styles.overviewProgress}>
+                                            <View style={styles.progressBarContainer}>
+                                                <View
+                                                    style={[
+                                                        styles.progressBarFill,
+                                                        { width: `${Math.min(overallProgress, 100)}%` }
+                                                    ]}
+                                                />
+                                            </View>
+                                            <Text style={styles.progressPercentage}>
+                                                {overallProgress.toFixed(2)}%
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.overviewDivider} />
+                                    <View style={styles.overviewRight}>
+                                        <Text style={styles.overviewLabel}>Objectif total</Text>
+                                        <Text style={styles.overviewValue}>
+                                            {formatCurrency(totalTarget)}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.statsContainer}>
+                                    <View style={styles.modernStatBadge}>
+                                        <LinearGradient
+                                            colors={["#FFD700", "#FFA500"]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.statBadgeIcon}
+                                        >
+                                            <Ionicons name="trophy" size={16} color="#FFF" />
+                                        </LinearGradient>
+                                        <Text style={styles.statBadgeText}>
+                                            {completedGoals} atteints
+                                        </Text>
+                                    </View>
+                                    <View style={styles.modernStatBadge}>
+                                        <LinearGradient
+                                            colors={["#22D3EE", "#0EA5E9"]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.statBadgeIcon}
+                                        >
+                                            <Ionicons name="flag" size={16} color="#FFF" />
+                                        </LinearGradient>
+                                        <Text style={styles.statBadgeText}>
+                                            {goals.length} actifs
+                                        </Text>
+                                    </View>
                                 </View>
                             </View>
                         </View>
                     </ImageBackground>
+                </LinearGradient>
 
-                </ThemedView>
-                {/* Objectifs */}
+                {/* Goals Section */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Mes Objectifs
-                        </Text>
+                        <View>
+                            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                                Mes Objectifs
+                            </Text>
+                            <Text style={[styles.sectionSubtitle, { color: isLight ? "#666" : "#AAA" }]}>
+                                {goals.length} objectif{goals.length > 1 ? 's' : ''} en cours
+                            </Text>
+                        </View>
                     </View>
 
                     {goals.map(goal => {
@@ -299,152 +352,132 @@ export default function SavingsGoalsPage() {
                             <TouchableOpacity
                                 key={goal.id}
                                 style={[
-                                    styles.goalCard,
-                                    {
-                                        backgroundColor: isLight ? "#FFF" : "#1F1F1F",
-                                        borderLeftColor: goal.color,
-                                    },
+                                    styles.modernGoalCard,
+                                    { backgroundColor: isLight ? "#FFFFFF" : "#151515" },
                                 ]}
                                 onPress={() => openContributeModal(goal)}
                                 onLongPress={() => handleDeleteGoal(goal.id)}
+                                activeOpacity={0.7}
                             >
-                                <View style={styles.goalHeader}>
-                                    <View style={styles.goalLeft}>
-                                        <View
-                                            style={[
-                                                styles.goalIcon,
-                                                { backgroundColor: goal.color + "20" },
+                                {/* Card Header */}
+                                <View style={styles.modernGoalHeader}>
+                                    <View style={styles.goalHeaderLeft}>
+                                        <LinearGradient
+                                            colors={[
+                                                goal.color,
+                                                adjustColorBrightness(goal.color, -20)
                                             ]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.modernGoalIcon}
                                         >
                                             <Ionicons
                                                 name={goal.icon as any}
                                                 size={28}
-                                                color={goal.color}
+                                                color="#FFF"
                                             />
-                                        </View>
-                                        <View>
-                                            <Text style={[styles.goalTitle, { color: theme.text }]}>
+                                        </LinearGradient>
+                                        <View style={styles.goalHeaderInfo}>
+                                            <Text style={[styles.modernGoalTitle, { color: theme.text }]}>
                                                 {goal.title}
                                             </Text>
-                                            <Text
-                                                style={[
-                                                    styles.goalCategory,
-                                                    { color: theme.text },
-                                                ]}
-                                            >
-                                                {goal.category}
-                                            </Text>
+                                            <View style={styles.categoryBadge}>
+                                                <View style={[styles.categoryDot, { backgroundColor: goal.color }]} />
+                                                <Text style={[styles.modernGoalCategory, { color: isLight ? "#666" : "#AAA" }]}>
+                                                    {goal.category}
+                                                </Text>
+                                            </View>
                                         </View>
                                     </View>
 
                                     {isCompleted && (
-                                        <View style={styles.completedBadge}>
-                                            <Ionicons
-                                                name="checkmark-circle"
-                                                size={24}
-                                                color="#4ADE80"
-                                            />
+                                        <View style={styles.modernCompletedBadge}>
+                                            <LinearGradient
+                                                colors={["#4ADE80", "#22C55E"]}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 1, y: 1 }}
+                                                style={styles.completedBadgeGradient}
+                                            >
+                                                <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                                            </LinearGradient>
                                         </View>
                                     )}
                                 </View>
 
-                                {/* Montants */}
-                                <View style={styles.amountsContainer}>
-                                    <View>
-                                        <Text style={[styles.amountLabel, { color: theme.text }]}>
+                                {/* Amounts Section */}
+                                <View style={styles.modernAmountsContainer}>
+                                    <View style={styles.amountBox}>
+                                        <Text style={[styles.modernAmountLabel, { color: isLight ? "#666" : "#AAA" }]}>
                                             Épargné
                                         </Text>
-                                        <Text style={[styles.amountValue, { color: goal.color }]}>
+                                        <Text style={[styles.modernAmountValue, { color: goal.color }]}>
                                             {formatCurrency(goal.currentAmount)}
                                         </Text>
                                     </View>
-                                    <View style={styles.amountDivider} />
-                                    <View>
-                                        <Text style={[styles.amountLabel, { color: theme.text }]}>
+                                    <View style={[styles.modernAmountDivider, { backgroundColor: isLight ? "#E5E5E5" : "#2A2A2A" }]} />
+                                    <View style={styles.amountBox}>
+                                        <Text style={[styles.modernAmountLabel, { color: isLight ? "#666" : "#AAA" }]}>
                                             Objectif
                                         </Text>
-                                        <Text style={[styles.amountValue, { color: theme.text }]}>
+                                        <Text style={[styles.modernAmountValue, { color: theme.text }]}>
                                             {formatCurrency(goal.targetAmount)}
                                         </Text>
                                     </View>
                                 </View>
 
-                                {/* Progression */}
-                                <View style={styles.goalProgressContainer}>
-                                    <Progress.Bar
-                                        progress={Math.min(progress / 100, 1)}
-                                        width={null}
-                                        height={10}
-                                        color={isCompleted ? "#4ADE80" : goal.color}
-                                        unfilledColor={isLight ? "#E5E7EB" : "#374151"}
-                                        borderWidth={0}
-                                        borderRadius={5}
-                                    />
-                                    <View style={styles.goalProgressInfo}>
-                                        <Text style={[styles.goalProgressText, { color: goal.color }]}>
-                                            {progress.toFixed(0)}%
+                                {/* Progress Section */}
+                                <View style={styles.modernProgressContainer}>
+                                    <View style={styles.progressHeader}>
+                                        <Text style={[styles.progressLabel, { color: goal.color }]}>
+                                            {progress.toFixed(0)}% complété
                                         </Text>
-                                        <Text
-                                            style={[
-                                                styles.goalRemainingText,
-                                                { color: theme.text },
-                                            ]}
-                                        >
+                                        <Text style={[styles.remainingLabel, { color: isLight ? "#666" : "#AAA" }]}>
                                             {isCompleted
-                                                ? "✨ Objectif atteint !"
+                                                ? "Objectif atteint! 🎉"
                                                 : `Reste ${formatCurrency(remaining)}`}
                                         </Text>
                                     </View>
+                                    <View style={[styles.modernProgressBar, { backgroundColor: isLight ? "#F0F0F0" : "#2A2A2A" }]}>
+                                        <LinearGradient
+                                            colors={[
+                                                isCompleted ? "#4ADE80" : goal.color,
+                                                isCompleted ? "#22C55E" : adjustColorBrightness(goal.color, -20)
+                                            ]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 0 }}
+                                            style={[
+                                                styles.modernProgressFill,
+                                                { width: `${Math.min(progress, 100)}%` }
+                                            ]}
+                                        />
+                                    </View>
                                 </View>
 
-                                {/* Suggestion d'épargne */}
+                                {/* Suggestion Card */}
                                 {!isCompleted && suggestion && (
-                                    <View
-                                        style={[
-                                            styles.suggestionCard,
-                                            { backgroundColor: goal.color + "10" },
-                                        ]}
-                                    >
+                                    <View style={[styles.modernSuggestionCard, { backgroundColor: goal.color + "10" }]}>
                                         <View style={styles.suggestionHeader}>
-                                            <Ionicons
-                                                name="bulb"
-                                                size={20}
-                                                color={goal.color}
-                                            />
-                                            <Text
-                                                style={[
-                                                    styles.suggestionTitle,
-                                                    { color: goal.color },
-                                                ]}
-                                            >
-                                                Suggestion d'épargne
+                                            <View style={[styles.suggestionIcon, { backgroundColor: goal.color + "20" }]}>
+                                                <Ionicons name="bulb" size={18} color={goal.color} />
+                                            </View>
+                                            <Text style={[styles.modernSuggestionTitle, { color: goal.color }]}>
+                                                Plan d'épargne suggéré
                                             </Text>
                                         </View>
-                                        <Text style={[styles.suggestionText, { color: theme.text }]}>
+                                        <Text style={[styles.modernSuggestionText, { color: theme.text }]}>
                                             Épargnez{" "}
-                                            <Text style={{ fontWeight: "700", color: goal.color }}>
-                                                {formatCurrency(suggestion.monthlyAmount)}
+                                            <Text style={{ fontWeight: "800", color: goal.color }}>
+                                                {formatCurrency(suggestion.monthlyAmount)}/mois
                                             </Text>{" "}
-                                            par mois pour atteindre votre objectif en{" "}
+                                            pour atteindre votre objectif en{" "}
                                             <Text style={{ fontWeight: "700" }}>
                                                 {suggestion.monthsLeft} mois
                                             </Text>
-                                            .
                                         </Text>
-                                        <View style={styles.deadlineContainer}>
-                                            <Ionicons
-                                                name="calendar"
-                                                size={14}
-                                                color={theme.text}
-                                            />
-                                            <Text
-                                                style={[
-                                                    styles.deadlineText,
-                                                    { color: theme.text },
-                                                ]}
-                                            >
-                                                Échéance:{" "}
-                                                {goal.deadline.toLocaleDateString("fr-FR", {
+                                        <View style={styles.modernDeadlineContainer}>
+                                            <Ionicons name="calendar-outline" size={14} color={isLight ? "#666" : "#AAA"} />
+                                            <Text style={[styles.modernDeadlineText, { color: isLight ? "#666" : "#AAA" }]}>
+                                                Échéance: {goal.deadline.toLocaleDateString("fr-FR", {
                                                     day: "numeric",
                                                     month: "long",
                                                     year: "numeric",
@@ -453,30 +486,62 @@ export default function SavingsGoalsPage() {
                                         </View>
                                     </View>
                                 )}
+
+                                {/* Color Indicator */}
+                                <View style={[styles.goalColorIndicator, { backgroundColor: goal.color }]} />
                             </TouchableOpacity>
                         );
                     })}
 
                     {goals.length === 0 && (
-                        <View style={styles.emptyState}>
-                            <Ionicons name="rocket-outline" size={64} color={theme.text} />
-                            <Text style={[styles.emptyText, { color: theme.text }]}>
+                        <View style={styles.modernEmptyState}>
+                            <View style={styles.emptyStateIcon}>
+                                <Ionicons name="rocket-outline" size={64} color={isLight ? "#CCC" : "#444"} />
+                            </View>
+                            <Text style={[styles.emptyTitle, { color: theme.text }]}>
                                 Aucun objectif d'épargne
                             </Text>
-                            <Text style={[styles.emptySubtext, { color: theme.text }]}>
-                                Créez votre premier objectif pour commencer à épargner
+                            <Text style={[styles.emptySubtext, { color: isLight ? "#666" : "#AAA" }]}>
+                                Créez votre premier objectif pour commencer à épargner intelligemment
                             </Text>
+                            <TouchableOpacity
+                                style={styles.emptyStateButton}
+                                onPress={() => setShowAddModal(true)}
+                            >
+                                <LinearGradient
+                                    colors={[Colors.primary, adjustColorBrightness(Colors.primary, -20)]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.emptyStateButtonGradient}
+                                >
+                                    <Ionicons name="add-circle" size={20} color="#FFF" />
+                                    <Text style={styles.emptyStateButtonText}>
+                                        Créer un objectif
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
                         </View>
                     )}
                 </View>
             </ScrollView>
+
+            {/* Modern Add Button */}
             <TouchableOpacity
-                style={styles.addButton}
+                style={styles.modernAddButton}
                 onPress={() => setShowAddModal(true)}
+                activeOpacity={0.9}
             >
-                <Ionicons name="add" size={28} color="#FFF" />
+                <LinearGradient
+                    colors={[Colors.primary, adjustColorBrightness(Colors.primary, -20)]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.addButtonGradient}
+                >
+                    <Ionicons name="add" size={28} color="#FFF" />
+                </LinearGradient>
             </TouchableOpacity>
-            {/* Modal Ajouter Objectif */}
+
+            {/* Add Goal Modal */}
             <Modal
                 visible={showAddModal}
                 animationType="slide"
@@ -484,45 +549,45 @@ export default function SavingsGoalsPage() {
                 onRequestClose={() => setShowAddModal(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View
-                        style={[
-                            styles.modalContent,
-                            { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                        ]}
-                    >
+                    <View style={[styles.modalContent, { backgroundColor: isLight ? "#FFF" : "#151515" }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: theme.text }]}>
-                                Nouvel Objectif
-                            </Text>
-                            <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                                <Ionicons name="close" size={28} color={theme.text} />
+                            <View>
+                                <Text style={[styles.modalTitle, { color: theme.text }]}>
+                                    Nouvel Objectif
+                                </Text>
+                                <Text style={[styles.modalSubtitle, { color: isLight ? "#666" : "#AAA" }]}>
+                                    Définissez votre objectif d'épargne
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                style={[styles.modalCloseButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
+                                onPress={() => setShowAddModal(false)}
+                            >
+                                <Ionicons name="close" size={24} color={theme.text} />
                             </TouchableOpacity>
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false}>
-                            {/* Titre */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: theme.text }]}>
+                            {/* Title Input */}
+                            <View style={styles.modernInputGroup}>
+                                <Text style={[styles.modernInputLabel, { color: theme.text }]}>
                                     Nom de l'objectif
                                 </Text>
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        {
-                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
-                                            color: theme.text,
-                                        },
-                                    ]}
-                                    placeholder="Ex: Nouveau PC, Voyage..."
-                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
-                                    value={title}
-                                    onChangeText={setTitle}
-                                />
+                                <View style={[styles.modernInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                                    <Ionicons name="flag-outline" size={20} color={isLight ? "#999" : "#666"} />
+                                    <TextInput
+                                        style={[styles.modernInput, { color: theme.text }]}
+                                        placeholder="Ex: Nouveau PC, Voyage..."
+                                        placeholderTextColor={isLight ? "#999" : "#666"}
+                                        value={title}
+                                        onChangeText={setTitle}
+                                    />
+                                </View>
                             </View>
 
-                            {/* Catégorie */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: theme.text }]}>
+                            {/* Category Selector */}
+                            <View style={styles.modernInputGroup}>
+                                <Text style={[styles.modernInputLabel, { color: theme.text }]}>
                                     Catégorie
                                 </Text>
                                 <ScrollView
@@ -534,14 +599,14 @@ export default function SavingsGoalsPage() {
                                         <TouchableOpacity
                                             key={cat.name}
                                             style={[
-                                                styles.categoryChip,
+                                                styles.modernCategoryChip,
                                                 {
                                                     backgroundColor:
                                                         category === cat.name
                                                             ? cat.color + "20"
                                                             : isLight
                                                                 ? "#F5F5F5"
-                                                                : "#2A2A2A",
+                                                                : "#1F1F1F",
                                                     borderColor:
                                                         category === cat.name
                                                             ? cat.color
@@ -549,19 +614,23 @@ export default function SavingsGoalsPage() {
                                                 },
                                             ]}
                                             onPress={() => setCategory(cat.name)}
+                                            activeOpacity={0.7}
                                         >
-                                            <Ionicons
-                                                name={cat.icon as any}
-                                                size={20}
-                                                color={
-                                                    category === cat.name
-                                                        ? cat.color
-                                                        : theme.text
-                                                }
-                                            />
+                                            <View
+                                                style={[
+                                                    styles.categoryChipIconContainer,
+                                                    { backgroundColor: category === cat.name ? cat.color + "30" : (isLight ? "#E5E5E5" : "#2A2A2A") }
+                                                ]}
+                                            >
+                                                <Ionicons
+                                                    name={cat.icon as any}
+                                                    size={18}
+                                                    color={category === cat.name ? cat.color : (isLight ? "#666" : "#AAA")}
+                                                />
+                                            </View>
                                             <Text
                                                 style={[
-                                                    styles.categoryChipText,
+                                                    styles.modernCategoryChipText,
                                                     {
                                                         color:
                                                             category === cat.name
@@ -577,44 +646,58 @@ export default function SavingsGoalsPage() {
                                 </ScrollView>
                             </View>
 
-                            {/* Montant */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: theme.text }]}>
-                                    Montant objectif (Ar)
+                            {/* Amount Input */}
+                            <View style={styles.modernInputGroup}>
+                                <Text style={[styles.modernInputLabel, { color: theme.text }]}>
+                                    Montant objectif
                                 </Text>
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        {
-                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
-                                            color: theme.text,
-                                        },
-                                    ]}
-                                    placeholder="Ex: 2500000"
-                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
-                                    keyboardType="numeric"
-                                    value={targetAmount}
-                                    onChangeText={setTargetAmount}
-                                />
+                                <View style={[styles.modernInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                                    <Ionicons name="cash-outline" size={20} color={isLight ? "#999" : "#666"} />
+                                    <TextInput
+                                        style={[styles.modernInput, { color: theme.text }]}
+                                        placeholder="Ex: 2500000"
+                                        placeholderTextColor={isLight ? "#999" : "#666"}
+                                        keyboardType="numeric"
+                                        value={targetAmount}
+                                        onChangeText={setTargetAmount}
+                                    />
+                                    <Text style={[styles.currencyLabel, { color: isLight ? "#999" : "#666" }]}>
+                                        Ar
+                                    </Text>
+                                </View>
                             </View>
 
+                            {/* Submit Button */}
                             <TouchableOpacity
                                 style={[
-                                    styles.submitButton,
-                                    (!title || !category || !targetAmount) &&
-                                    styles.submitButtonDisabled,
+                                    styles.modernSubmitButton,
+                                    (!title || !category || !targetAmount) && styles.submitButtonDisabled,
                                 ]}
                                 onPress={handleAddGoal}
                                 disabled={!title || !category || !targetAmount}
+                                activeOpacity={0.8}
                             >
-                                <Text style={styles.submitButtonText}>Créer l'objectif</Text>
+                                <LinearGradient
+                                    colors={(!title || !category || !targetAmount)
+                                        ? ["#CCC", "#AAA"]
+                                        : [Colors.primary, adjustColorBrightness(Colors.primary, -20)]
+                                    }
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.submitButtonGradient}
+                                >
+                                    <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                                    <Text style={styles.modernSubmitButtonText}>
+                                        Créer l'objectif
+                                    </Text>
+                                </LinearGradient>
                             </TouchableOpacity>
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
 
-            {/* Modal Contribuer */}
+            {/* Contribute Modal */}
             <Modal
                 visible={showContributeModal}
                 animationType="slide"
@@ -626,440 +709,174 @@ export default function SavingsGoalsPage() {
                         style={[
                             styles.modalContent,
                             styles.contributeModal,
-                            { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
+                            { backgroundColor: isLight ? "#FFF" : "#151515", paddingBottom: 0 },
                         ]}
                     >
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: theme.text }]}>
-                                Ajouter une épargne
-                            </Text>
-                            <TouchableOpacity onPress={() => setShowContributeModal(false)}>
-                                <Ionicons name="close" size={28} color={theme.text} />
+                            <View>
+                                <Text style={[styles.modalTitle, { color: theme.text }]}>
+                                    Ajouter une épargne
+                                </Text>
+                                <Text style={[styles.modalSubtitle, { color: isLight ? "#666" : "#AAA" }]}>
+                                    Contribuez à votre objectif
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                style={[styles.modalCloseButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
+                                onPress={() => setShowContributeModal(false)}
+                            >
+                                <Ionicons name="close" size={24} color={theme.text} />
                             </TouchableOpacity>
                         </View>
+                        <ScrollView style={{ height: "100%" }} showsVerticalScrollIndicator={false} >
 
-                        {selectedGoal && (
-                            <>
-                                <View style={styles.goalPreview}>
-                                    <View
-                                        style={[
-                                            styles.goalPreviewIcon,
-                                            { backgroundColor: selectedGoal.color + "20" },
-                                        ]}
-                                    >
-                                        <Ionicons
-                                            name={selectedGoal.icon as any}
-                                            size={32}
-                                            color={selectedGoal.color}
-                                        />
-                                    </View>
-                                    <Text style={[styles.goalPreviewTitle, { color: theme.text }]}>
-                                        {selectedGoal.title}
-                                    </Text>
-                                    <Text
-                                        style={[
-                                            styles.goalPreviewProgress,
-                                            { color: theme.text },
-                                        ]}
-                                    >
-                                        {formatCurrency(selectedGoal.currentAmount)} /{" "}
-                                        {formatCurrency(selectedGoal.targetAmount)}
-                                    </Text>
-                                </View>
-
-                                <View style={styles.inputGroup}>
-                                    <Text style={[styles.inputLabel, { color: theme.text }]}>
-                                        Montant à ajouter (Ar)
-                                    </Text>
-                                    <TextInput
-                                        style={[
-                                            styles.input,
-                                            styles.amountInput,
-                                            {
-                                                backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
-                                                color: theme.text,
-                                            },
-                                        ]}
-                                        placeholder="0"
-                                        placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
-                                        keyboardType="numeric"
-                                        value={contributionAmount}
-                                        onChangeText={setContributionAmount}
-                                    />
-                                </View>
-
-                                {/* Montants rapides */}
-                                <View style={styles.quickAmounts}>
-                                    {[10000, 50000, 100000, 250000].map(amount => (
-                                        <TouchableOpacity
-                                            key={amount}
-                                            style={[
-                                                styles.quickAmountButton,
-                                                {
-                                                    backgroundColor:
-                                                        isLight ? "#F5F5F5" : "#2A2A2A",
-                                                },
+                            {selectedGoal && (
+                                <>
+                                    {/* Goal Preview */}
+                                    <View style={styles.modernGoalPreview}>
+                                        <LinearGradient
+                                            colors={[
+                                                selectedGoal.color,
+                                                adjustColorBrightness(selectedGoal.color, -20)
                                             ]}
-                                            onPress={() =>
-                                                setContributionAmount(amount.toString())
-                                            }
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.modernGoalPreviewIcon}
                                         >
-                                            <Text
-                                                style={[
-                                                    styles.quickAmountText,
-                                                    { color: theme.text },
-                                                ]}
-                                            >
-                                                +{formatCurrency(amount)}
+                                            <Ionicons
+                                                name={selectedGoal.icon as any}
+                                                size={36}
+                                                color="#FFF"
+                                            />
+                                        </LinearGradient>
+                                        <Text style={[styles.modernGoalPreviewTitle, { color: theme.text }]}>
+                                            {selectedGoal.title}
+                                        </Text>
+                                        <View style={styles.goalPreviewProgress}>
+                                            <Text style={[styles.goalPreviewAmount, { color: selectedGoal.color }]}>
+                                                {formatCurrency(selectedGoal.currentAmount)}
                                             </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
+                                            <Text style={[styles.goalPreviewSeparator, { color: isLight ? "#999" : "#666" }]}>
+                                                /
+                                            </Text>
+                                            <Text style={[styles.goalPreviewTarget, { color: isLight ? "#666" : "#AAA" }]}>
+                                                {formatCurrency(selectedGoal.targetAmount)}
+                                            </Text>
+                                        </View>
 
-                                <TouchableOpacity
-                                    style={[
-                                        styles.submitButton,
-                                        !contributionAmount && styles.submitButtonDisabled,
-                                    ]}
-                                    onPress={handleContribute}
-                                    disabled={!contributionAmount}
-                                >
-                                    <Text style={styles.submitButtonText}>Ajouter</Text>
-                                </TouchableOpacity>
-                            </>
-                        )}
+                                        {/* Progress Bar */}
+                                        <View style={[styles.previewProgressBar, { backgroundColor: isLight ? "#F0F0F0" : "#2A2A2A" }]}>
+                                            <View
+                                                style={[
+                                                    styles.previewProgressFill,
+                                                    {
+                                                        width: `${Math.min((selectedGoal.currentAmount / selectedGoal.targetAmount) * 100, 100)}%`,
+                                                        backgroundColor: selectedGoal.color
+                                                    }
+                                                ]}
+                                            />
+                                        </View>
+                                    </View>
+
+                                    {/* Amount Input */}
+                                    <View style={styles.modernInputGroup}>
+                                        <Text style={[styles.modernInputLabel, { color: theme.text }]}>
+                                            Montant à ajouter
+                                        </Text>
+                                        <View style={[styles.modernAmountInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                                            <Ionicons name="add-circle-outline" size={24} color={selectedGoal.color} />
+                                            <TextInput
+                                                style={[styles.modernAmountInput, { color: theme.text }]}
+                                                placeholder="0"
+                                                placeholderTextColor={isLight ? "#CCC" : "#444"}
+                                                keyboardType="numeric"
+                                                value={contributionAmount}
+                                                onChangeText={setContributionAmount}
+                                            />
+                                            <Text style={[styles.amountCurrency, { color: isLight ? "#999" : "#666" }]}>
+                                                Ar
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Quick Amounts */}
+                                    <View style={styles.modernQuickAmounts}>
+                                        <Text style={[styles.quickAmountsLabel, { color: isLight ? "#666" : "#AAA" }]}>
+                                            Montants rapides
+                                        </Text>
+                                        <View style={styles.quickAmountsGrid}>
+                                            {[10000, 50000, 100000, 250000].map(amount => (
+                                                <TouchableOpacity
+                                                    key={amount}
+                                                    style={[
+                                                        styles.modernQuickAmountButton,
+                                                        {
+                                                            backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F",
+                                                            borderColor: contributionAmount === amount.toString()
+                                                                ? selectedGoal.color
+                                                                : "transparent"
+                                                        },
+                                                    ]}
+                                                    onPress={() => setContributionAmount(amount.toString())}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <Ionicons
+                                                        name="add"
+                                                        size={16}
+                                                        color={contributionAmount === amount.toString()
+                                                            ? selectedGoal.color
+                                                            : (isLight ? "#666" : "#AAA")
+                                                        }
+                                                    />
+                                                    <Text
+                                                        style={[
+                                                            styles.modernQuickAmountText,
+                                                            {
+                                                                color: contributionAmount === amount.toString()
+                                                                    ? selectedGoal.color
+                                                                    : theme.text
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {formatCurrency(amount)}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </View>
+
+                                    {/* Submit Button */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.modernSubmitButton,
+                                            !contributionAmount && styles.submitButtonDisabled,
+                                        ]}
+                                        onPress={handleContribute}
+                                        disabled={!contributionAmount}
+                                        activeOpacity={0.8}
+                                    >
+                                        <LinearGradient
+                                            colors={!contributionAmount
+                                                ? ["#CCC", "#AAA"]
+                                                : [selectedGoal.color, adjustColorBrightness(selectedGoal.color, -20)]
+                                            }
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.submitButtonGradient}
+                                        >
+                                            <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                                            <Text style={styles.modernSubmitButtonText}>
+                                                Confirmer l'ajout
+                                            </Text>
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                </>
+                            )}
+                        </ScrollView>
+
                     </View>
                 </View>
             </Modal>
         </ThemedSafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    header: {
-        padding: 24,
-    },
-    overviewCard: {
-        backgroundColor: "rgba(255, 255, 255, 0.15)",
-        borderRadius: 6,
-        padding: 20,
-        backdropFilter: "blur(10px)",
-    },
-    overviewRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        marginBottom: 16,
-    },
-    overviewItem: {
-        flex: 1,
-    },
-    overviewLabel: {
-        fontSize: 12,
-        color: "#FFF",
-        opacity: 0.8,
-        marginBottom: 4,
-    },
-    overviewValue: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#FFF",
-    },
-    progressContainer: {
-        marginBottom: 12,
-    },
-    progressText: {
-        fontSize: 12,
-        color: "#FFF",
-        marginTop: 8,
-        textAlign: "center",
-        fontWeight: "600",
-    },
-    statsRow: {
-        flexDirection: "row",
-        gap: 8,
-    },
-    statBadge: {
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
-        padding: 8,
-        borderRadius: 6,
-    },
-    statBadgeText: {
-        fontSize: 11,
-        color: "#FFF",
-        fontWeight: "600",
-    },
-    content: {
-        flex: 1,
-    },
-    section: {
-        paddingHorizontal: 24,
-        marginTop: 24,
-    },
-    sectionHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 20,
-    },
-    addButton: {
-        position: "absolute",
-        bottom: 120,
-        right: 24,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: Colors.primary,
-        justifyContent: "center",
-        alignItems: "center",
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 8,
-    },
-    goalCard: {
-        padding: 20,
-        borderRadius: 6,
-        marginBottom: 16,
-    },
-    goalHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    goalLeft: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        flex: 1,
-    },
-    goalIcon: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    goalTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        marginBottom: 4,
-    },
-    goalCategory: {
-        fontSize: 13,
-    },
-    completedBadge: {
-        marginLeft: 12,
-    },
-    amountsContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    amountLabel: {
-        fontSize: 12,
-        marginBottom: 4,
-    },
-    amountValue: {
-        fontSize: 18,
-        fontWeight: "700",
-    },
-    amountDivider: {
-        width: 1,
-        height: 40,
-        backgroundColor: "#E5E7EB",
-        marginHorizontal: 20,
-    },
-    goalProgressContainer: {
-        marginBottom: 16,
-    },
-    goalProgressInfo: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginTop: 8,
-    },
-    goalProgressText: {
-        fontSize: 14,
-        fontWeight: "700",
-    },
-    goalRemainingText: {
-        fontSize: 13,
-        fontWeight: "500",
-    },
-    suggestionCard: {
-        padding: 16,
-        borderRadius: 6,
-        marginTop: 4,
-    },
-    suggestionHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-        marginBottom: 8,
-    },
-    suggestionTitle: {
-        fontSize: 14,
-        fontWeight: "700",
-    },
-    suggestionText: {
-        fontSize: 14,
-        lineHeight: 20,
-        marginBottom: 8,
-    },
-    deadlineContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        marginTop: 4,
-    },
-    deadlineText: {
-        fontSize: 12,
-    },
-    chartCard: {
-        padding: 16,
-        borderRadius: 16,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-        alignItems: "center",
-    },
-    emptyState: {
-        alignItems: "center",
-        paddingVertical: 60,
-    },
-    emptyText: {
-        fontSize: 18,
-        fontWeight: "600",
-        marginTop: 16,
-        marginBottom: 8,
-    },
-    emptySubtext: {
-        fontSize: 14,
-        textAlign: "center",
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        justifyContent: "flex-end",
-    },
-    modalContent: {
-        borderTopLeftRadius: 10,
-        borderTopRightRadius: 10,
-        paddingTop: 24,
-        paddingHorizontal: 24,
-        paddingBottom: 40,
-        maxHeight: "80%",
-    },
-    modalHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 24,
-    },
-    modalTitle: {
-        fontSize: 24,
-        fontWeight: "bold",
-    },
-    inputGroup: {
-        marginBottom: 20,
-    },
-    inputLabel: {
-        fontSize: 14,
-        fontWeight: "600",
-        marginBottom: 8,
-    },
-    input: {
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderRadius: 6,
-        fontSize: 16,
-    },
-    amountInput: {
-        fontSize: 24,
-        fontWeight: "700",
-        textAlign: "center",
-    },
-    categoryScroll: {
-        marginTop: 8,
-    },
-    categoryChip: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
-        marginRight: 8,
-        borderWidth: 1,
-        gap: 8,
-    },
-    categoryChipText: {
-        fontSize: 14,
-        fontWeight: "500",
-    },
-    submitButton: {
-        backgroundColor: Colors.primary,
-        paddingVertical: 16,
-        borderRadius: 6,
-        alignItems: "center",
-        marginTop: 24,
-    },
-    submitButtonDisabled: {
-        opacity: 0.5,
-    },
-    submitButtonText: {
-        color: "#FFF",
-        fontSize: 16,
-        fontWeight: "700",
-    },
-    contributeModal: {
-        maxHeight: "70%",
-    },
-    goalPreview: {
-        alignItems: "center",
-        marginBottom: 24,
-    },
-    goalPreviewIcon: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    goalPreviewTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        marginBottom: 8,
-    },
-    goalPreviewProgress: {
-        fontSize: 14,
-    },
-    quickAmounts: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 8,
-        marginBottom: 16,
-    },
-    quickAmountButton: {
-        flex: 1,
-        minWidth: "45%",
-        paddingVertical: 12,
-        borderRadius: 12,
-        alignItems: "center",
-    },
-    quickAmountText: {
-        fontSize: 14,
-        fontWeight: "600",
-    },
-});

@@ -20,7 +20,7 @@ const Verify = () => {
     return (
         <ThemedSafeAreaView style={{ position: "relative", flex: 1, justifyContent: "space-between" }}>
             <ThemedView style={{ zIndex: 2, position: "absolute", flex: 1, gap: 20, marginHorizontal: "auto", width: "100%", height: "100%", backgroundColor: "transparent", justifyContent: "center", alignItems: "center" }}>
-                <Image source={require("@/assets/images/logo.png")} style={{ width: 50, height: 50 }} />
+                <Image source={require("@/assets/images/logo_white.png")} style={{ width: 60, height: 60, objectFit: "contain", borderRadius: 10 }} />
                 <ThemedText style={{ color: "#fff", textAlign: "center", fontSize: 30, }}>Vérifier l'e-mail</ThemedText>
                 <ThemedView style={{ width: "88%", padding: 20, height: "auto", backgroundColor: theme.bgSecondary, borderRadius: 6, justifyContent: "center", alignItems: "center", }}>
                     <ThemedText style={{ color: theme.text, textAlign: "center", fontSize: 13 }}>Nous avons envoyé le code à votre adresse e-mail</ThemedText>
@@ -28,11 +28,11 @@ const Verify = () => {
                     <ThemedText style={{ color: theme.text, textAlign: "center", fontSize: 20, }}>{email}</ThemedText>
                     <Separator style={{ height: 30 }} />
                     <OTPTextInput
-                        inputCount={4}           
+                        inputCount={4}
                         handleTextChange={setCode}
-                        tintColor={`${Colors.primary}`}       
-                        offTintColor="#ccc"  
-                        style={{ borderRadius: 6, borderColor: theme.coloborder, borderWidth: 1, paddingHorizontal: 16, color: theme.text, marginHorizontal: 10, width: 50, height: 50 }}       
+                        tintColor={`${Colors.primary}`}
+                        offTintColor="#ccc"
+                        style={{ borderRadius: 6, borderColor: theme.coloborder, borderWidth: 1, paddingHorizontal: 16, color: theme.text, marginHorizontal: 10, width: 50, height: 50 }}
                     />
                     <Separator style={{ height: 40 }} />
                     <ThemedPressable style={{ width: "100%", borderRadius: 6, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" }}>

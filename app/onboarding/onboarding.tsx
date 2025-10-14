@@ -1,20 +1,20 @@
 import React, { useState, useRef, use } from 'react';
 import {
   View,
-  Text,
-  StyleSheet,
   Dimensions,
   TouchableOpacity,
   FlatList,
   Animated,
-  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constant/Colors';
 import ThemedSafeAreaView from '@/components/ThemedSafeAreaView';
 import { useRouter } from 'expo-router';
+import ThemedText from '@/components/ThemedText';
+import { Image } from 'react-native';
+import styles from '@/styles/onboarding';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface OnboardingSlide {
   id: string;
@@ -41,16 +41,18 @@ const OnboardingScreen = () => {
             <LinearGradient
               colors={['#1E1E2E', '#2E2E3E']}
               style={styles.darkCircle}
-            />
+            >
+              <Image source={require("@/assets/images/logo_white.png")} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 10 }} />
+            </LinearGradient>
           </View>
           <View style={[styles.cryptoIcon, styles.bitcoin]}>
-            <Text style={styles.cryptoText}>₿</Text>
+            <ThemedText style={styles.cryptoText}>₿</ThemedText>
           </View>
           <View style={[styles.cryptoIcon, styles.ethereum]}>
-            <Text style={styles.cryptoText}>Ξ</Text>
+            <ThemedText style={styles.cryptoText}>Ξ</ThemedText>
           </View>
           <View style={[styles.smallCircle, styles.purple]}>
-            <Text style={styles.percentText}>23%</Text>
+            <ThemedText style={styles.percentText}>23%</ThemedText>
           </View>
           <View style={[styles.smallCircle, styles.blue]} />
           <View style={[styles.smallCircle, styles.yellow]} />
@@ -70,7 +72,7 @@ const OnboardingScreen = () => {
               style={styles.gradientCard}
             >
               <View style={styles.lockIcon}>
-                <Text style={styles.lockText}>🔒</Text>
+                <ThemedText style={styles.lockText}>🔒</ThemedText>
               </View>
             </LinearGradient>
           </View>
@@ -105,7 +107,7 @@ const OnboardingScreen = () => {
             </LinearGradient>
           </View>
           <View style={styles.trendingBadge}>
-            <Text style={styles.trendingText}>📈</Text>
+            <ThemedText style={styles.trendingText}>📈</ThemedText>
           </View>
         </View>
       ),
@@ -124,7 +126,7 @@ const OnboardingScreen = () => {
             >
               <View style={styles.walletContent}>
                 <View style={styles.chip} />
-                <Text style={styles.walletAmount}>9745.00 Ar</Text>
+                <ThemedText style={styles.walletAmount}>9745.00 Ar</ThemedText>
                 <View style={styles.walletDetails}>
                   <View style={styles.detailLine} />
                   <View style={[styles.detailLine, styles.shortLine]} />
@@ -133,7 +135,7 @@ const OnboardingScreen = () => {
             </LinearGradient>
           </View>
           <View style={styles.plusBadge}>
-            <Text style={styles.plusText}>+</Text>
+            <ThemedText style={styles.plusText}>+</ThemedText>
           </View>
         </View>
       ),
@@ -158,15 +160,15 @@ const OnboardingScreen = () => {
     <View style={[styles.slide, { backgroundColor: item.backgroundColor }]}>
       {item.illustration}
       <View style={styles.textContainer}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description}>{item.description}</Text>
+        <ThemedText style={styles.title}>{item.title}</ThemedText>
+        <ThemedText style={styles.description}>{item.description}</ThemedText>
       </View>
     </View>
   );
 
   return (
     <ThemedSafeAreaView style={styles.container}>
-      
+
       {/* Skip Button */}
       <View style={styles.header}>
         {currentIndex < slides.length - 1 && (
@@ -174,7 +176,7 @@ const OnboardingScreen = () => {
             style={styles.skipButton}
             onPress={() => setCurrentIndex(slides.length - 1)}
           >
-            <Text style={styles.skipText}>Skip</Text>
+            <ThemedText style={styles.skipText}>Skip</ThemedText>
           </TouchableOpacity>
         )}
       </View>
@@ -237,11 +239,11 @@ const OnboardingScreen = () => {
 
         {/* Button */}
         {currentIndex === slides.length - 1 ? (
-          <TouchableOpacity onPress={()=> router.push('/auth/commencer')} style={styles.button}>
+          <TouchableOpacity onPress={() => router.push('/auth/commencer')} style={styles.button}>
             <View
               style={styles.buttonGradient}
             >
-              <Text style={styles.buttonText}>Commencer</Text>
+              <ThemedText style={styles.buttonText}>Commencer</ThemedText>
             </View>
           </TouchableOpacity>
         ) : (
@@ -249,7 +251,7 @@ const OnboardingScreen = () => {
             <View
               style={styles.buttonGradient}
             >
-              <Text style={styles.buttonText}>Suivante</Text>
+              <ThemedText style={styles.buttonText}>Suivante</ThemedText>
             </View>
           </TouchableOpacity>
         )}
@@ -257,344 +259,5 @@ const OnboardingScreen = () => {
     </ThemedSafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    position: 'relative',
-  },
-  header: {
-    position: 'absolute',
-    paddingHorizontal: 10,
-    paddingTop: 50,
-    paddingBottom: 10,
-    alignItems: 'flex-end',
-    zIndex: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    width: '100%',
-  },
-  skipButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  skipText: {
-    color: Colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  slide: {
-    width,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 100,
-  },
-  illustrationContainer: {
-    flex: 1,
-    width: width * 0.8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  mainCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  darkCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-  },
-  cryptoIcon: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  bitcoin: {
-    backgroundColor: '#F7931A',
-    top: 40,
-    left: 20,
-  },
-  ethereum: {
-    backgroundColor: '#FF6B9D',
-    bottom: 60,
-    right: 20,
-  },
-  cryptoText: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  smallCircle: {
-    position: 'absolute',
-    borderRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  purple: {
-    width: 50,
-    height: 50,
-    backgroundColor: '#7C3AED',
-    top: 50,
-    right: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  blue: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#3B82F6',
-    bottom: 40,
-    left: 60,
-  },
-  yellow: {
-    width: 35,
-    height: 35,
-    backgroundColor: '#FBBF24',
-    top: 140,
-    right: 80,
-  },
-  percentText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  securityCard: {
-    width: 200,
-    height: 240,
-    borderRadius: 30,
-    transform: [{ rotate: '10deg' }],
-  },
-  gradientCard: {
-    flex: 1,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  lockIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  lockText: {
-    fontSize: 40,
-  },
-  floatingDot: {
-    position: 'absolute',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-  },
-  dot1: {
-    backgroundColor: '#10B981',
-    top: 20,
-    left: 40,
-  },
-  dot2: {
-    backgroundColor: '#FBBF24',
-    bottom: 60,
-    right: 20,
-  },
-  dot3: {
-    backgroundColor: '#3B82F6',
-    top: 100,
-    right: 60,
-  },
-  chartCard: {
-    width: 240,
-    height: 160,
-    borderRadius: 20,
-  },
-  chartGradient: {
-    flex: 1,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  chartBars: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: 4,
-  },
-  bar: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.4)',
-    borderRadius: 4,
-  },
-  trendingBadge: {
-    position: 'absolute',
-    top: 20,
-    right: 40,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#FBBF24',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  trendingText: {
-    fontSize: 24,
-  },
-  walletCard: {
-    width: 200,
-    height: 260,
-    borderRadius: 25,
-  },
-  walletGradient: {
-    flex: 1,
-    borderRadius: 25,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  walletContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  chip: {
-    width: 40,
-    height: 30,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 6,
-  },
-  walletAmount: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginTop: 'auto',
-  },
-  walletDetails: {
-    marginTop: 12,
-  },
-  detailLine: {
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.4)',
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  shortLine: {
-    width: '60%',
-  },
-  plusBadge: {
-    position: 'absolute',
-    bottom: 80,
-    right: 30,
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    transform: [{ rotate: '12deg' }],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  plusText: {
-    color: '#fff',
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  textContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 16,
-    lineHeight: 40,
-  },
-  description: {
-    fontSize: 16,
-    color: '#6B7280',
-    lineHeight: 24,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    alignItems: 'center',
-  },
-  pagination: {
-    flexDirection: 'row',
-    marginBottom: 24,
-    gap: 8,
-  },
-  dot: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
-  },
-  button: {
-    width: '100%',
-    height: 56,
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  buttonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.primary,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  browseButton: {
-    paddingVertical: 12,
-  },
-  browseText: {
-    color: '#7C3AED',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
 
 export default OnboardingScreen;

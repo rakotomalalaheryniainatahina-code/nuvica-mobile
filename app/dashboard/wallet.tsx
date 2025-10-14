@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
     View,
-    Text,
     ScrollView,
     StyleSheet,
     useColorScheme,
@@ -12,12 +11,17 @@ import {
 import { Colors } from "@/constant/Colors";
 import { Theme } from "@/types/ColorType";
 import { Ionicons } from "@expo/vector-icons";
-import { LineChart, BarChart, PieChart } from "react-native-chart-kit";
+import { LineChart } from "react-native-chart-kit";
 import ThemedView from "@/components/ThemedView";
 import Images from '@/constant/Images';
 import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
 import TopHeros from "@/components/Topheros";
 import ThemedScrollView from "@/components/ThemedScrollView";
+import ThemedText from "@/components/ThemedText";
+import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "react-native";
+import styles from "@/styles/wallet";
 const { width } = Dimensions.get("window");
 
 // Types
@@ -32,7 +36,7 @@ interface CategorySpending {
     category: string;
     amount: number;
     percentage: number;
-    change: number; // % change from last month
+    change: number;
     color: string;
     icon: string;
 }
@@ -160,8 +164,7 @@ export default function ReportsAnalyticsPage() {
     const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
     const isLight = theme === Colors.light;
 
-    const [selectedPeriod, setSelectedPeriod] = useState<"month" | "quarter" | "year">("month");
-
+    const router = useRouter();
     // Calculs
     const currentMonth = MONTHLY_DATA[MONTHLY_DATA.length - 1];
     const previousMonth = MONTHLY_DATA[MONTHLY_DATA.length - 2];
@@ -181,118 +184,153 @@ export default function ReportsAnalyticsPage() {
 
     const chartConfig = {
         backgroundColor: "transparent",
-        backgroundGradientFrom: isLight ? "#FFF" : "#1F1F1F",
-        backgroundGradientTo: isLight ? "#FFF" : "#1F1F1F",
+        backgroundGradientFrom: isLight ? "#FAFAFA" : "#1A1A1A",
+        backgroundGradientTo: isLight ? "#FAFAFA" : "#1A1A1A",
         decimalPlaces: 0,
-        color: (opacity = 1) => Colors.primary,
+        color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
         labelColor: (opacity = 1) =>
-            isLight ? `rgba(0, 0, 0, ${opacity})` : `rgba(255, 255, 255, ${opacity})`,
+            isLight ? `rgba(30, 30, 30, ${opacity * 0.7})` : `rgba(255, 255, 255, ${opacity * 0.8})`,
         style: {
-            borderRadius: 16,
+            borderRadius: 20,
+        },
+        propsForDots: {
+            r: "5",
+            strokeWidth: "2",
         },
         propsForBackgroundLines: {
-            strokeDasharray: "",
-            stroke: isLight ? "#E5E7EB" : "#374151",
+            strokeDasharray: "5,5",
+            stroke: isLight ? "#E0E0E0" : "#2A2A2A",
             strokeWidth: 1,
         },
     };
 
     return (
-        <ThemedSafeAreaView style={{ backgroundColor: theme.background }}>
+        <ThemedSafeAreaView style={{ backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }}>
             <ThemedScrollView stickyHeaderIndices={[0]}>
                 <TopHeros />
 
-                <ThemedView
-                    style={styles.header}
-                >
-                    <ImageBackground source={Images.starBG} style={{ width: "100%", height: "100%", justifyContent: "center", paddingVertical: 15, paddingHorizontal: 24, }}>
-
-                        <Text style={styles.headerTitle}>Rapports & Analyses</Text>
-
-                        {/* Quick Stats */}
-                        <View style={styles.quickStats}>
-                            <View style={styles.quickStatItem}>
-                                <Ionicons name="trending-up" size={20} color="#4ADE80" />
-                                <Text style={styles.quickStatValue}>
-                                    {incomeChange >= 0 ? "+" : ""}
-                                    {incomeChange.toFixed(1)}%
-                                </Text>
-                                <Text style={styles.quickStatLabel}>Revenus</Text>
+                {/* Header modernisé avec gradient */}
+                <LinearGradient
+                    colors={[Colors.primary, '#4ADE80', '#6366f1']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }} style={styles.header}>
+                    <ImageBackground
+                        source={Images.starBG}
+                        style={styles.headerBackground}
+                    >
+                        <View style={styles.headerGradient}>
+                            <View style={styles.headerTop}>
+                                <View>
+                                    <ThemedText style={styles.headerSubtitle}>Octobre 2025</ThemedText>
+                                    <ThemedText style={styles.headerTitle}>Rapports & Analyses</ThemedText>
+                                </View>
+                                <TouchableOpacity style={styles.headerButton}>
+                                    <Image source={require("@/assets/images/logo.png")} style={{ width: 30, height: 30, objectFit: "contain" }} />
+                                </TouchableOpacity>
                             </View>
-                            <View style={styles.statDivider} />
-                            <View style={styles.quickStatItem}>
-                                <Ionicons
-                                    name={expenseChange > 0 ? "trending-up" : "trending-down"}
-                                    size={20}
-                                    color={expenseChange > 0 ? "#FF6B6B" : "#4ADE80"}
-                                />
-                                <Text style={styles.quickStatValue}>
-                                    {expenseChange >= 0 ? "+" : ""}
-                                    {expenseChange.toFixed(1)}%
-                                </Text>
-                                <Text style={styles.quickStatLabel}>Dépenses</Text>
-                            </View>
-                            <View style={styles.statDivider} />
-                            <View style={styles.quickStatItem}>
-                                <Ionicons name="wallet" size={20} color="#FFA500" />
-                                <Text style={styles.quickStatValue}>{savingsRate.toFixed(0)}%</Text>
-                                <Text style={styles.quickStatLabel}>Épargne</Text>
+
+                            {/* Quick Stats avec glassmorphism */}
+                            <View style={styles.quickStatsContainer}>
+                                <View style={styles.quickStatCard}>
+                                    <View style={[styles.statIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.66)' }]}>
+                                        <Ionicons name="trending-up" size={18} color="#4ADE80" />
+                                    </View>
+                                    <ThemedText style={styles.quickStatValue}>
+                                        {incomeChange >= 0 ? "+" : ""}
+                                        {incomeChange.toFixed(1)}%
+                                    </ThemedText>
+                                    <ThemedText style={styles.quickStatLabel}>Revenus</ThemedText>
+                                </View>
+
+                                <View style={styles.quickStatCard}>
+                                    <View style={[styles.statIconContainer, { backgroundColor: expenseChange > 0 ? 'rgba(255, 107, 107, 0.15)' : 'rgba(74, 222, 128, 0.15)' }]}>
+                                        <Ionicons
+                                            name={expenseChange > 0 ? "trending-up" : "trending-down"}
+                                            size={18}
+                                            color={expenseChange > 0 ? "#FF6B6B" : "#4ADE80"}
+                                        />
+                                    </View>
+                                    <ThemedText style={styles.quickStatValue}>
+                                        {expenseChange >= 0 ? "+" : ""}
+                                        {expenseChange.toFixed(1)}%
+                                    </ThemedText>
+                                    <ThemedText style={styles.quickStatLabel}>Dépenses</ThemedText>
+                                </View>
+
+                                <View style={styles.quickStatCard}>
+                                    <View style={[styles.statIconContainer, { backgroundColor: 'rgba(255, 165, 0, 0.15)' }]}>
+                                        <Ionicons name="wallet" size={18} color="#FFA500" />
+                                    </View>
+                                    <ThemedText style={styles.quickStatValue}>{savingsRate.toFixed(0)}%</ThemedText>
+                                    <ThemedText style={styles.quickStatLabel}>Épargne</ThemedText>
+                                </View>
                             </View>
                         </View>
                     </ImageBackground>
-                </ThemedView>
+                </LinearGradient>
 
-                <ThemedView
-                    style={styles.content}
-                >
-                    {/* Conseils Financiers */}
+                <ThemedView style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }]}>
+                    {/* Conseils avec design moderne */}
                     <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Analyses & Conseils
-                        </Text>
-                        {FINANCIAL_INSIGHTS.map((insight) => (
+                        <View style={styles.sectionHeader}>
+                            <ThemedText style={[styles.sectionTitle, { color: theme.text }]}>
+                                Analyses & Conseils
+                            </ThemedText>
+                            <TouchableOpacity onPress={() => router.push("/screen/AnalyseConseils")} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <ThemedText style={[styles.seeAllText, { color: Colors.primary }]}>Tout voir</ThemedText>
+                                <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {FINANCIAL_INSIGHTS.map((insight, index) => (
                             <View
                                 key={insight.id}
                                 style={[
-                                    styles.insightCard,
+                                    styles.modernInsightCard,
                                     {
-                                        backgroundColor: isLight ? "#FFF" : "#1F1F1F",
+                                        backgroundColor: isLight ? "#FFFFFF" : "#151515",
                                     },
                                 ]}
                             >
                                 <View style={styles.insightHeader}>
                                     <View
                                         style={[
-                                            styles.insightIcon,
-                                            { backgroundColor: insight.color + "20" },
+                                            styles.modernInsightIcon,
+                                            { backgroundColor: insight.color + "15" },
                                         ]}
                                     >
                                         <Ionicons
                                             name={insight.icon as any}
-                                            size={22}
+                                            size={20}
                                             color={insight.color}
                                         />
                                     </View>
-                                    <Text style={[styles.insightTitle, { color: theme.text }]}>
-                                        {insight.title}
-                                    </Text>
+                                    <View style={{ flex: 1 }}>
+                                        <ThemedText style={[styles.insightTitle, { color: theme.text }]}>
+                                            {insight.title}
+                                        </ThemedText>
+                                        <ThemedText style={[styles.modernInsightMessage, { color: isLight ? "#666" : "#AAA" }]}>
+                                            {insight.message}
+                                        </ThemedText>
+                                    </View>
                                 </View>
-                                <Text style={[styles.insightMessage, { color: theme.text }]}>
-                                    {insight.message}
-                                </Text>
+                                <View style={[styles.cardIndicator, { backgroundColor: insight.color }]} />
                             </View>
                         ))}
                     </View>
 
-                    {/* Évolution Mensuelle */}
+                    {/* Graphique d'évolution avec design épuré */}
                     <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Évolution Mensuelle
-                        </Text>
+                        <View style={styles.sectionHeader}>
+                            <ThemedText style={[styles.sectionTitle, { color: theme.text }]}>
+                                Évolution Mensuelle
+                            </ThemedText>
+                        </View>
+
                         <View
                             style={[
-                                styles.chartCard,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
+                                styles.modernChartCard,
+                                { backgroundColor: isLight ? "#FFFFFF" : "#151515" },
                             ]}
                         >
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -312,196 +350,79 @@ export default function ReportsAnalyticsPage() {
                                             },
                                             {
                                                 data: MONTHLY_DATA.map((m) => m.savings),
-                                                color: (opacity = 1) => Colors.primary,
+                                                color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
                                                 strokeWidth: 3,
                                             },
                                         ],
-                                        legend: ["Revenus", "Dépenses", "Épargne"],
                                     }}
-                                    width={width - 48}
-                                    height={250}
+                                    width={width - 32}
+                                    height={240}
                                     chartConfig={chartConfig}
                                     bezier
-                                    style={{
-                                        marginVertical: 8,
-                                    }}
+                                    style={styles.chart}
+                                    withShadow={false}
+                                    withInnerLines={true}
+                                    withOuterLines={false}
                                 />
                             </ScrollView>
-                            <View style={styles.chartLegend}>
+
+                            <View style={styles.modernChartLegend}>
                                 <View style={styles.legendItem}>
                                     <View style={[styles.legendDot, { backgroundColor: "#4ADE80" }]} />
-                                    <Text style={[styles.legendText, { color: theme.text }]}>
-                                        Revenus
-                                    </Text>
+                                    <ThemedText style={[styles.legendText, { color: theme.text }]}>Revenus</ThemedText>
                                 </View>
                                 <View style={styles.legendItem}>
                                     <View style={[styles.legendDot, { backgroundColor: "#FF6B6B" }]} />
-                                    <Text style={[styles.legendText, { color: theme.text }]}>
-                                        Dépenses
-                                    </Text>
+                                    <ThemedText style={[styles.legendText, { color: theme.text }]}>Dépenses</ThemedText>
                                 </View>
                                 <View style={styles.legendItem}>
-                                    <View
-                                        style={[styles.legendDot, { backgroundColor: Colors.primary }]}
-                                    />
-                                    <Text style={[styles.legendText, { color: theme.text }]}>
-                                        Épargne
-                                    </Text>
+                                    <View style={[styles.legendDot, { backgroundColor: "#6366F1" }]} />
+                                    <ThemedText style={[styles.legendText, { color: theme.text }]}>Épargne</ThemedText>
                                 </View>
                             </View>
                         </View>
                     </View>
 
-                    {/* Comparaison Mensuelle */}
+                    {/* Catégories avec cartes modernes */}
                     <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Comparaison Mois à Mois
-                        </Text>
-                        <View
-                            style={[
-                                styles.chartCard,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-
-                                <BarChart
-                                    data={{
-                                        labels: MONTHLY_DATA.slice(-4).map((m) => m.month),
-                                        datasets: [
-                                            {
-                                                data: MONTHLY_DATA.slice(-4).map((m) => m.expenses),
-                                            },
-                                        ],
-                                    }}
-                                    width={width - 48}
-                                    height={220}
-                                    chartConfig={{
-                                        ...chartConfig,
-                                        color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-                                    }}
-                                    style={{
-                                        marginVertical: 8,
-                                    }}
-                                    showValuesOnTopOfBars
-                                    fromZero
-                                />
-                            </ScrollView>
-                            <View style={styles.comparisonStats}>
-                                <View style={styles.comparisonStatItem}>
-                                    <Text style={[styles.comparisonLabel, { color: theme.text }]}>
-                                        Moyenne mensuelle
-                                    </Text>
-                                    <Text style={[styles.comparisonValue, { color: theme.text }]}>
-                                        {formatCurrency(averageMonthlyExpenses)}
-                                    </Text>
-                                </View>
-                                <View style={styles.comparisonStatItem}>
-                                    <Text style={[styles.comparisonLabel, { color: theme.text }]}>
-                                        Ce mois
-                                    </Text>
-                                    <Text
-                                        style={[
-                                            styles.comparisonValue,
-                                            {
-                                                color:
-                                                    currentMonth.expenses > averageMonthlyExpenses
-                                                        ? "#FF6B6B"
-                                                        : "#4ADE80",
-                                            },
-                                        ]}
-                                    >
-                                        {formatCurrency(currentMonth.expenses)}
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Dépenses par Catégorie */}
-                    <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Dépenses par Catégorie
-                        </Text>
-                        <View
-                            style={[
-                                styles.chartCard,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-
-                                <PieChart
-                                    data={CATEGORY_SPENDING.map((cat) => ({
-                                        name: cat.category,
-                                        population: cat.amount,
-                                        color: cat.color,
-                                        legendFontColor: isLight ? "#333" : "#CCC",
-                                        legendFontSize: 12,
-                                    }))}
-                                    width={width - 48}
-                                    height={220}
-                                    chartConfig={chartConfig}
-                                    accessor="population"
-                                    backgroundColor="transparent"
-                                    paddingLeft="15"
-                                    absolute
-                                />
-                            </ScrollView>
+                        <View style={styles.sectionHeader}>
+                            <ThemedText style={[styles.sectionTitle, { color: theme.text }]}>
+                                Dépenses par Catégorie
+                            </ThemedText>
                         </View>
 
-                        {/* Détails par catégorie */}
-                        <View style={styles.categoryDetails}>
-                            {CATEGORY_SPENDING.map((category) => (
+                        <View style={styles.categoriesGrid}>
+                            {CATEGORY_SPENDING.map((category, index) => (
                                 <View
                                     key={category.category}
                                     style={[
-                                        styles.categoryCard,
-                                        { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
+                                        styles.modernCategoryCard,
+                                        { backgroundColor: isLight ? "#FFFFFF" : "#151515" },
                                     ]}
                                 >
-                                    <View style={styles.categoryLeft}>
+                                    <View style={styles.categoryCardTop}>
                                         <View
                                             style={[
-                                                styles.categoryIcon,
-                                                { backgroundColor: category.color + "20" },
+                                                styles.modernCategoryIcon,
+                                                { backgroundColor: category.color + "15" },
                                             ]}
                                         >
                                             <Ionicons
                                                 name={category.icon as any}
-                                                size={22}
+                                                size={24}
                                                 color={category.color}
                                             />
                                         </View>
-                                        <View>
-                                            <Text style={[styles.categoryName, { color: theme.text }]}>
-                                                {category.category}
-                                            </Text>
-                                            <Text
-                                                style={[
-                                                    styles.categoryPercentage,
-                                                    { color: theme.text },
-                                                ]}
-                                            >
-                                                {category.percentage}% du total
-                                            </Text>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.categoryRight}>
-                                        <Text style={[styles.categoryAmount, { color: theme.text }]}>
-                                            {formatCurrency(category.amount)}
-                                        </Text>
                                         <View
                                             style={[
-                                                styles.categoryChange,
+                                                styles.modernCategoryChange,
                                                 {
                                                     backgroundColor:
                                                         category.change > 0
-                                                            ? "#FF6B6B20"
+                                                            ? "#FF6B6B15"
                                                             : category.change < 0
-                                                                ? "#4ADE8020"
-                                                                : theme.text + "20",
+                                                                ? "#4ADE8015"
+                                                                : isLight ? "#F0F0F0" : "#2A2A2A",
                                                 },
                                             ]}
                                         >
@@ -513,7 +434,7 @@ export default function ReportsAnalyticsPage() {
                                                             ? "trending-down"
                                                             : "remove"
                                                 }
-                                                size={14}
+                                                size={12}
                                                 color={
                                                     category.change > 0
                                                         ? "#FF6B6B"
@@ -522,9 +443,9 @@ export default function ReportsAnalyticsPage() {
                                                             : theme.text
                                                 }
                                             />
-                                            <Text
+                                            <ThemedText
                                                 style={[
-                                                    styles.categoryChangeText,
+                                                    styles.modernCategoryChangeText,
                                                     {
                                                         color:
                                                             category.change > 0
@@ -537,359 +458,151 @@ export default function ReportsAnalyticsPage() {
                                             >
                                                 {category.change > 0 ? "+" : ""}
                                                 {category.change}%
-                                            </Text>
+                                            </ThemedText>
                                         </View>
+                                    </View>
+
+                                    <ThemedText style={[styles.modernCategoryName, { color: theme.text }]}>
+                                        {category.category}
+                                    </ThemedText>
+
+                                    <View style={styles.categoryCardBottom}>
+                                        <ThemedText style={[styles.modernCategoryAmount, { color: theme.text }]}>
+                                            {formatCurrency(category.amount)}
+                                        </ThemedText>
+                                        <ThemedText style={[styles.modernCategoryPercentage, { color: isLight ? "#666" : "#AAA" }]}>
+                                            {category.percentage}% du total
+                                        </ThemedText>
+                                    </View>
+
+                                    {/* Barre de progression */}
+                                    <View style={[styles.progressBar, { backgroundColor: isLight ? "#F0F0F0" : "#2A2A2A" }]}>
+                                        <View
+                                            style={[
+                                                styles.progressFill,
+                                                {
+                                                    width: `${category.percentage}%`,
+                                                    backgroundColor: category.color
+                                                }
+                                            ]}
+                                        />
                                     </View>
                                 </View>
                             ))}
                         </View>
                     </View>
 
-                    {/* Statistiques Détaillées */}
+                    {/* Stats détaillées modernisées */}
                     <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                        <ThemedText style={[styles.sectionTitle, { color: theme.text, marginBottom: 20 }]}>
                             Statistiques Détaillées
-                        </Text>
-                        <View
-                            style={[
-                                styles.statsCard,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <View style={styles.statRow}>
-                                <View style={styles.statItem}>
-                                    <Text style={[styles.statLabel, { color: theme.text }]}>
-                                        Dépenses totales (Oct)
-                                    </Text>
-                                    <Text style={[styles.statValue, { color: theme.text }]}>
-                                        {formatCurrency(totalExpenses)}
-                                    </Text>
+                        </ThemedText>
+
+                        <View style={styles.statsGrid}>
+                            <View style={[styles.modernStatCard, { backgroundColor: isLight ? "#FFFFFF" : "#151515" }]}>
+                                <View style={[styles.statCardIcon, { backgroundColor: "#6366F115" }]}>
+                                    <Ionicons name="wallet" size={20} color="#6366F1" />
                                 </View>
+                                <ThemedText style={[styles.statCardLabel, { color: isLight ? "#666" : "#AAA" }]}>
+                                    Dépenses totales
+                                </ThemedText>
+                                <ThemedText style={[styles.statCardValue, { color: theme.text }]}>
+                                    {formatCurrency(totalExpenses)}
+                                </ThemedText>
                             </View>
 
-                            <View style={styles.statRow}>
-                                <View style={styles.statItem}>
-                                    <Text style={[styles.statLabel, { color: theme.text }]}>
-                                        Moyenne mensuelle
-                                    </Text>
-                                    <Text style={[styles.statValue, { color: theme.text }]}>
-                                        {formatCurrency(averageMonthlyExpenses)}
-                                    </Text>
+                            <View style={[styles.modernStatCard, { backgroundColor: isLight ? "#FFFFFF" : "#151515" }]}>
+                                <View style={[styles.statCardIcon, { backgroundColor: "#4ADE8015" }]}>
+                                    <Ionicons name="trending-up" size={20} color="#4ADE80" />
                                 </View>
+                                <ThemedText style={[styles.statCardLabel, { color: isLight ? "#666" : "#AAA" }]}>
+                                    Épargne moyenne
+                                </ThemedText>
+                                <ThemedText style={[styles.statCardValue, { color: theme.text }]}>
+                                    {formatCurrency(averageMonthlySavings)}
+                                </ThemedText>
                             </View>
 
-                            <View style={styles.statRow}>
-                                <View style={styles.statItem}>
-                                    <Text style={[styles.statLabel, { color: theme.text }]}>
-                                        Épargne moyenne
-                                    </Text>
-                                    <Text style={[styles.statValue, { color: "#4ADE80" }]}>
-                                        {formatCurrency(averageMonthlySavings)}
-                                    </Text>
+                            <View style={[styles.modernStatCard, { backgroundColor: isLight ? "#FFFFFF" : "#151515" }]}>
+                                <View style={[styles.statCardIcon, { backgroundColor: "#22D3EE15" }]}>
+                                    <Ionicons name="pie-chart" size={20} color="#22D3EE" />
                                 </View>
+                                <ThemedText style={[styles.statCardLabel, { color: isLight ? "#666" : "#AAA" }]}>
+                                    Taux d'épargne
+                                </ThemedText>
+                                <ThemedText style={[styles.statCardValue, { color: theme.text }]}>
+                                    {savingsRate.toFixed(1)}%
+                                </ThemedText>
                             </View>
 
-                            <View style={styles.statRow}>
-                                <View style={styles.statItem}>
-                                    <Text style={[styles.statLabel, { color: theme.text }]}>
-                                        Taux d'épargne
-                                    </Text>
-                                    <Text style={[styles.statValue, { color: "#22D3EE" }]}>
-                                        {savingsRate.toFixed(1)}%
-                                    </Text>
+                            <View style={[styles.modernStatCard, { backgroundColor: isLight ? "#FFFFFF" : "#151515" }]}>
+                                <View style={[styles.statCardIcon, { backgroundColor: "#F59E0B15" }]}>
+                                    <Ionicons name="analytics" size={20} color="#F59E0B" />
                                 </View>
-                            </View>
-
-                            <View style={styles.statRow}>
-                                <View style={styles.statItem}>
-                                    <Text style={[styles.statLabel, { color: theme.text }]}>
-                                        Plus grosse dépense
-                                    </Text>
-                                    <Text style={[styles.statValue, { color: theme.text }]}>
-                                        {CATEGORY_SPENDING[0].category} -{" "}
-                                        {formatCurrency(CATEGORY_SPENDING[0].amount)}
-                                    </Text>
-                                </View>
+                                <ThemedText style={[styles.statCardLabel, { color: isLight ? "#666" : "#AAA" }]}>
+                                    Moyenne mensuelle
+                                </ThemedText>
+                                <ThemedText style={[styles.statCardValue, { color: theme.text }]}>
+                                    {formatCurrency(averageMonthlyExpenses)}
+                                </ThemedText>
                             </View>
                         </View>
                     </View>
 
-                    {/* Export Options */}
+                    {/* Actions rapides */}
                     <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                            Export & Partage
-                        </Text>
-                        <TouchableOpacity
-                            style={[
-                                styles.exportButton,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <Ionicons name="download" size={24} color={Colors.primary} />
-                            <Text style={[styles.exportButtonText, { color: theme.text }]}>
-                                Télécharger le rapport PDF
-                            </Text>
-                            <Ionicons name="chevron-forward" size={20} color={theme.text} />
-                        </TouchableOpacity>
+                        <ThemedText style={[styles.sectionTitle, { color: theme.text, marginBottom: 20 }]}>
+                            Actions Rapides
+                        </ThemedText>
 
-                        <TouchableOpacity
-                            style={[
-                                styles.exportButton,
-                                { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                            ]}
-                        >
-                            <Ionicons name="share-social" size={24} color={Colors.primary} />
-                            <Text style={[styles.exportButtonText, { color: theme.text }]}>
-                                Partager les analyses
-                            </Text>
-                            <Ionicons name="chevron-forward" size={20} color={theme.text} />
-                        </TouchableOpacity>
-                        <View style={{width: "100%", height: 100}}/>
+                        <View style={styles.actionsGrid}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.modernActionCard,
+                                    { backgroundColor: isLight ? "#FFFFFF" : "#151515" },
+                                ]}
+                            >
+                                <View style={[styles.actionIcon, { backgroundColor: "#6366F115" }]}>
+                                    <Ionicons name="download-outline" size={24} color="#6366F1" />
+                                </View>
+                                <ThemedText style={[styles.actionText, { color: theme.text }]}>
+                                    Télécharger PDF
+                                </ThemedText>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.modernActionCard,
+                                    { backgroundColor: isLight ? "#FFFFFF" : "#151515" },
+                                ]}
+                            >
+                                <View style={[styles.actionIcon, { backgroundColor: "#4ADE8015" }]}>
+                                    <Ionicons name="share-social-outline" size={24} color="#4ADE80" />
+                                </View>
+                                <ThemedText style={[styles.actionText, { color: theme.text }]}>
+                                    Partager
+                                </ThemedText>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.modernActionCard,
+                                    { backgroundColor: isLight ? "#FFFFFF" : "#151515" },
+                                ]}
+                            >
+                                <View style={[styles.actionIcon, { backgroundColor: "#22D3EE15" }]}>
+                                    <Ionicons name="calendar-outline" size={24} color="#22D3EE" />
+                                </View>
+                                <ThemedText style={[styles.actionText, { color: theme.text }]}>
+                                    Planifier
+                                </ThemedText>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{ width: "100%", height: 100 }} />
                     </View>
                 </ThemedView>
             </ThemedScrollView>
         </ThemedSafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    header: {
-        height: 200,
-        backgroundColor: Colors.primary,
-    },
-    headerTitle: {
-        fontSize: 28,
-        fontWeight: "bold",
-        color: "#FFF",
-        marginBottom: 20,
-    },
-    quickStats: {
-        flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.15)",
-        borderRadius: 6,
-        padding: 16,
-        alignItems: "center",
-    },
-    quickStatItem: {
-        flex: 1,
-        alignItems: "center",
-    },
-    quickStatValue: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#FFF",
-        marginTop: 8,
-        marginBottom: 4,
-    },
-    quickStatLabel: {
-        fontSize: 11,
-        color: "#FFF",
-        opacity: 0.9,
-    },
-    statDivider: {
-        width: 1,
-        height: 50,
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
-        marginHorizontal: 12,
-    },
-    content: {
-        flex: 1,
-    },
-    section: {
-        paddingHorizontal: 24,
-        marginTop: 24,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        marginBottom: 16,
-    },
-    insightCard: {
-        padding: 16,
-        borderRadius: 6,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderLeftWidth: 1,
-        borderColor: "rgba(153, 153, 153, 0.2)",
-    },
-    insightHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        marginBottom: 8,
-    },
-    insightIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    insightTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        flex: 1,
-    },
-    insightMessage: {
-        fontSize: 14,
-        lineHeight: 20,
-    },
-    chartCard: {
-        padding: 16,
-        borderRadius: 6,
-    },
-    chartLegend: {
-        flexDirection: "row",
-        justifyContent: "center",
-        gap: 20,
-        marginBottom: 16,
-    },
-    legendItem: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-    },
-    legendDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-    },
-    legendText: {
-        fontSize: 12,
-        fontWeight: "500",
-    },
-    comparisonStats: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-        marginTop: 16,
-        paddingTop: 16,
-        borderTopWidth: 1,
-        borderTopColor: "#E5E7EB",
-    },
-    comparisonStatItem: {
-        alignItems: "center",
-    },
-    comparisonLabel: {
-        fontSize: 12,
-        marginBottom: 4,
-    },
-    comparisonValue: {
-        fontSize: 16,
-        fontWeight: "700",
-    },
-    categoryDetails: {
-        marginTop: 16,
-        gap: 12,
-    },
-    categoryCard: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: 16,
-        borderRadius: 6,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderLeftWidth: 1,
-        borderColor: "rgba(153, 153, 153, 0.2)",
-    },
-    categoryLeft: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        flex: 1,
-    },
-    categoryIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    categoryName: {
-        fontSize: 16,
-        fontWeight: "600",
-        marginBottom: 2,
-    },
-    categoryPercentage: {
-        fontSize: 12,
-    },
-    categoryRight: {
-        alignItems: "flex-end",
-    },
-    categoryAmount: {
-        fontSize: 16,
-        fontWeight: "700",
-        marginBottom: 6,
-    },
-    categoryChange: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    categoryChangeText: {
-        fontSize: 12,
-        fontWeight: "600",
-    },
-    statsCard: {
-        padding: 20,
-        borderRadius: 6,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderLeftWidth: 1,
-        borderColor: "rgba(153, 153, 153, 0.2)",
-    },
-    statRow: {
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: "#E5E7EB",
-    },
-    statItem: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    statLabel: {
-        fontSize: 14,
-        flex: 1,
-    },
-    statValue: {
-        fontSize: 16,
-        fontWeight: "700",
-    },
-    exportButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        padding: 16,
-        borderRadius: 6,
-        marginBottom: 12,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    exportButtonText: {
-        fontSize: 16,
-        fontWeight: "600",
-        flex: 1,
-        marginLeft: 12,
-    },
-});
-
-
-// import ThemedSafeAreaView from "@/components/ThemedSafeAreaView"
-// import TopHeros from "@/components/Topheros"
-// import { Text } from "react-native"
-
-// const Wallet = () => {
-//     return (
-//         <ThemedSafeAreaView>
-//             <TopHeros />
-//             <Text>Wallet</Text>
-//         </ThemedSafeAreaView>
-//     )
-// }
-
-// export default Wallet

@@ -8,8 +8,7 @@ import {
     TouchableOpacity,
     TextInput,
     Modal,
-    Animated,
-    FlatList,
+    Dimensions,
 } from "react-native";
 import { Colors } from "@/constant/Colors";
 import { Theme } from "@/types/ColorType";
@@ -17,6 +16,11 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import ThemedView from "@/components/ThemedView";
 import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
+import { LinearGradient } from "expo-linear-gradient";
+import ThemedText from "@/components/ThemedText";
+import styles from "@/styles/transaction";
+
+const { width } = Dimensions.get("window");
 
 // Types
 interface Transaction {
@@ -114,6 +118,14 @@ const formatDate = (date: Date) => {
     });
 };
 
+const adjustColorBrightness = (color: string, amount: number): string => {
+    const num = parseInt(color.replace("#", ""), 16);
+    const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+    const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
+    const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+};
+
 export default function TransactionPage() {
     const colorScheme = useColorScheme();
     const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
@@ -161,19 +173,15 @@ export default function TransactionPage() {
     };
 
     const filteredTransactions = transactions.filter((transaction) => {
-        // Search filter
         const matchesSearch =
             transaction.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             transaction.category.toLowerCase().includes(searchQuery.toLowerCase());
 
-        // Category filter
         const matchesCategory =
             filterCategory === "all" || transaction.category === filterCategory;
 
-        // Type filter
         const matchesType = filterType === "all" || transaction.type === filterType;
 
-        // Period filter
         let matchesPeriod = true;
         if (filterPeriod !== "all") {
             const today = new Date();
@@ -208,121 +216,250 @@ export default function TransactionPage() {
         filterPeriod !== "all",
     ].filter(Boolean).length;
 
+    // Calculate totals
+    const totalIncome = transactions
+        .filter(t => t.type === "income")
+        .reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = transactions
+        .filter(t => t.type === "expense")
+        .reduce((sum, t) => sum + t.amount, 0);
+
     return (
-        <ThemedSafeAreaView>
-            {/* Header */}
-            
-            <View style={[styles.header, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Transactions</Text>
-
-                <ThemedView style={{ width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", gap: 10 }}>
-                    {/* Search Bar */}
-                    <View style={[styles.searchBar, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A" }]}>
-                        <Ionicons name="search" size={20} color={isLight ? "#A0A0A0" : "#808080"} />
-                        <TextInput
-                            style={[styles.searchInput, { color: theme.text }]}
-                            placeholder="Rechercher une transaction..."
-                            placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                        />
+        <ThemedSafeAreaView style={{ backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }}>
+            {/* Modern Header */}
+            <View style={[styles.modernHeader, { backgroundColor: isLight ? "#FFFFFF" : "#151515" }]}>
+                <View style={styles.headerTop}>
+                    <View>
+                        <ThemedText style={[styles.headerTitle, { color: theme.text }]}>Transactions</ThemedText>
+                        <ThemedText style={[styles.headerSubtitle, { color: isLight ? "#666" : "#AAA" }]}>
+                            {filteredTransactions.length} transactions
+                        </ThemedText>
                     </View>
-
-                    {/* Filter Button */}
-                    <TouchableOpacity
-                        style={styles.filterButton}
+                    <TouchableOpacity 
+                        style={styles.headerIconButton}
                         onPress={() => setShowFilterModal(true)}
                     >
-                        <Ionicons name="filter" size={20} color={Colors.primary} />
+                        <Ionicons name="options-outline" size={24} color={theme.text} />
                         {activeFiltersCount > 0 && (
-                            <View style={styles.filterBadge}>
-                                <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
+                            <View style={styles.modernFilterBadge}>
+                                <ThemedText style={styles.filterBadgeText}>{activeFiltersCount}</ThemedText>
                             </View>
                         )}
                     </TouchableOpacity>
-                </ThemedView>
+                </View>
+
+                {/* Summary Cards */}
+                <View style={styles.summaryContainer}>
+                    <View style={[styles.summaryCard, { backgroundColor: isLight ? "#F8FFF9" : "#0D1F12" }]}>
+                        <View style={styles.summaryIconContainer}>
+                            <LinearGradient
+                                colors={["#4ADE80", "#22C55E"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.summaryIconGradient}
+                            >
+                                <Ionicons name="arrow-down" size={16} color="#FFF" />
+                            </LinearGradient>
+                        </View>
+                        <View style={styles.summaryInfo}>
+                            <ThemedText style={[styles.summaryLabel, { color: isLight ? "#15803D" : "#86EFAC" }]}>
+                                Revenus
+                            </ThemedText>
+                            <ThemedText style={[styles.summaryAmount, { color: isLight ? "#15803D" : "#4ADE80" }]}>
+                                {formatCurrency(totalIncome)}
+                            </ThemedText>
+                        </View>
+                    </View>
+
+                    <View style={[styles.summaryCard, { backgroundColor: isLight ? "#FFF5F5" : "#1F0D0D" }]}>
+                        <View style={styles.summaryIconContainer}>
+                            <LinearGradient
+                                colors={["#FF6B6B", "#EE5A52"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.summaryIconGradient}
+                            >
+                                <Ionicons name="arrow-up" size={16} color="#FFF" />
+                            </LinearGradient>
+                        </View>
+                        <View style={styles.summaryInfo}>
+                            <ThemedText style={[styles.summaryLabel, { color: isLight ? "#B91C1C" : "#FCA5A5" }]}>
+                                Dépenses
+                            </ThemedText>
+                            <ThemedText style={[styles.summaryAmount, { color: isLight ? "#B91C1C" : "#FF6B6B" }]}>
+                                {formatCurrency(totalExpense)}
+                            </ThemedText>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Modern Search Bar */}
+                <View style={[styles.modernSearchBar, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                    <Ionicons name="search" size={20} color={isLight ? "#999" : "#666"} />
+                    <TextInput
+                        style={[styles.modernSearchInput, { color: theme.text }]}
+                        placeholder="Rechercher une transaction..."
+                        placeholderTextColor={isLight ? "#999" : "#666"}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery("")}>
+                            <Ionicons name="close-circle" size={20} color={isLight ? "#999" : "#666"} />
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
 
             {/* Transaction List */}
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+                style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }]} 
+                showsVerticalScrollIndicator={false}
+            >
                 {Object.entries(groupedTransactions).map(([dateKey, items]) => (
-                    <View key={dateKey} style={styles.dateGroup}>
-                        <Text style={[styles.dateHeader, { color: theme.text }]}>
-                            {dateKey}
-                        </Text>
-                        {items.map((transaction) => {
-                            const categoryData = [...CATEGORIES_EXPENSE, ...CATEGORIES_INCOME].find(
-                                (cat) => cat.name === transaction.category
-                            );
+                    <View key={dateKey} style={styles.dateSection}>
+                        {/* Modern Date Header */}
+                        <View style={styles.modernDateHeader}>
+                            <View style={styles.dateHeaderLeft}>
+                                <View style={[styles.dateBadge, { backgroundColor: Colors.primary + "15" }]}>
+                                    <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                                </View>
+                                <ThemedText style={[styles.dateHeaderText, { color: theme.text }]}>
+                                    {dateKey}
+                                </ThemedText>
+                            </View>
+                            <View style={[styles.transactionCount, { backgroundColor: isLight ? "#F0F0F0" : "#1F1F1F" }]}>
+                                <ThemedText style={[styles.countText, { color: isLight ? "#666" : "#AAA" }]}>
+                                    {items.length}
+                                </ThemedText>
+                            </View>
+                        </View>
 
-                            return (
-                                <TouchableOpacity
-                                    key={transaction.id}
-                                    style={[
-                                        styles.transactionCard,
-                                        { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
-                                    ]}
-                                >
-                                    <View
+                        {/* Transactions List */}
+                        <View style={styles.transactionsList}>
+                            {items.map((transaction, index) => {
+                                const categoryData = [...CATEGORIES_EXPENSE, ...CATEGORIES_INCOME].find(
+                                    (cat) => cat.name === transaction.category
+                                );
+                                const isIncome = transaction.type === "income";
+
+                                return (
+                                    <TouchableOpacity
+                                        key={transaction.id}
                                         style={[
-                                            styles.iconContainer,
-                                            {
-                                                backgroundColor:
-                                                    (categoryData?.color || Colors.primary) + "20",
-                                            },
+                                            styles.modernTransactionCard,
+                                            { backgroundColor: isLight ? "#FFFFFF" : "#151515" },
                                         ]}
+                                        activeOpacity={0.7}
                                     >
-                                        <Ionicons
-                                            name={categoryData?.icon as any || "wallet"}
-                                            size={24}
-                                            color={categoryData?.color || Colors.primary}
-                                        />
-                                    </View>
+                                        {/* Left Side */}
+                                        <View style={styles.transactionLeft}>
+                                            <LinearGradient
+                                                colors={[
+                                                    categoryData?.color || Colors.primary,
+                                                    adjustColorBrightness(categoryData?.color || Colors.primary, -20)
+                                                ]}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 1, y: 1 }}
+                                                style={styles.modernIconContainer}
+                                            >
+                                                <Ionicons
+                                                    name={categoryData?.icon as any || "wallet"}
+                                                    size={22}
+                                                    color="#FFF"
+                                                />
+                                            </LinearGradient>
 
-                                    <View style={styles.transactionInfo}>
-                                        <Text style={[styles.transactionTitle, { color: theme.text }]}>
-                                            {transaction.title}
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.transactionCategory,
-                                                { color: theme.text },
-                                            ]}
-                                        >
-                                            {transaction.category}
-                                        </Text>
-                                    </View>
+                                            <View style={styles.transactionDetails}>
+                                                <ThemedText style={[styles.modernTransactionTitle, { color: theme.text }]}>
+                                                    {transaction.title}
+                                                </ThemedText>
+                                                <View style={styles.categoryBadge}>
+                                                    <View 
+                                                        style={[
+                                                            styles.categoryDot, 
+                                                            { backgroundColor: categoryData?.color || Colors.primary }
+                                                        ]} 
+                                                    />
+                                                    <ThemedText style={[styles.modernTransactionCategory, { color: isLight ? "#666" : "#AAA" }]}>
+                                                        {transaction.category}
+                                                    </ThemedText>
+                                                </View>
+                                            </View>
+                                        </View>
 
-                                    <Text
-                                        style={[
-                                            styles.transactionAmount,
-                                            {
-                                                color:
-                                                    transaction.type === "income"
-                                                        ? "#4ADE80"
-                                                        : "#FF6B6B",
-                                            },
-                                        ]}
-                                    >
-                                        {transaction.type === "income" ? "+" : "-"}
-                                        {formatCurrency(transaction.amount)}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
+                                        {/* Right Side */}
+                                        <View style={styles.transactionRight}>
+                                            <ThemedText
+                                                style={[
+                                                    styles.modernTransactionAmount,
+                                                    { color: isIncome ? "#4ADE80" : "#FF6B6B" },
+                                                ]}
+                                            >
+                                                {isIncome ? "+" : "-"}{formatCurrency(transaction.amount)}
+                                            </ThemedText>
+                                            <View 
+                                                style={[
+                                                    styles.typeBadge,
+                                                    { backgroundColor: isIncome ? "#4ADE8015" : "#FF6B6B15" }
+                                                ]}
+                                            >
+                                                <Ionicons
+                                                    name={isIncome ? "arrow-down-circle" : "arrow-up-circle"}
+                                                    size={12}
+                                                    color={isIncome ? "#4ADE80" : "#FF6B6B"}
+                                                />
+                                                <ThemedText 
+                                                    style={[
+                                                        styles.typeBadgeText,
+                                                        { color: isIncome ? "#4ADE80" : "#FF6B6B" }
+                                                    ]}
+                                                >
+                                                    {isIncome ? "Revenu" : "Dépense"}
+                                                </ThemedText>
+                                            </View>
+                                        </View>
+
+                                        {/* Card Indicator */}
+                                        <View style={[styles.cardIndicator, { backgroundColor: categoryData?.color || Colors.primary }]} />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
                     </View>
                 ))}
+
+                {filteredTransactions.length === 0 && (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="receipt-outline" size={64} color={isLight ? "#CCC" : "#444"} />
+                        <ThemedText style={[styles.emptyTitle, { color: theme.text }]}>
+                            Aucune transaction
+                        </ThemedText>
+                        <ThemedText style={[styles.emptyMessage, { color: isLight ? "#666" : "#AAA" }]}>
+                            {searchQuery || activeFiltersCount > 0
+                                ? "Essayez de modifier vos filtres"
+                                : "Commencez par ajouter une transaction"}
+                        </ThemedText>
+                    </View>
+                )}
 
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            {/* Add Button */}
+            {/* Modern Add Button */}
             <TouchableOpacity
-                style={styles.addButton}
+                style={styles.modernAddButton}
                 onPress={() => setShowAddModal(true)}
-                activeOpacity={0.8}
+                activeOpacity={0.9}
             >
-                <Ionicons name="add" size={28} color="#FFF" />
+                <LinearGradient
+                    colors={[Colors.primary, adjustColorBrightness(Colors.primary, -20)]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.addButtonGradient}
+                >
+                    <Ionicons name="add" size={28} color="#FFF" />
+                </LinearGradient>
             </TouchableOpacity>
 
             {/* Add Transaction Modal */}
@@ -336,101 +473,120 @@ export default function TransactionPage() {
                     <View
                         style={[
                             styles.modalContent,
-                            { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
+                            { backgroundColor: isLight ? "#FFF" : "#151515" },
                         ]}
                     >
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: theme.text }]}>
-                                Nouvelle Transaction
-                            </Text>
-                            <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                                <Ionicons name="close" size={28} color={theme.text} />
+                            <View>
+                                <ThemedText style={[styles.modalTitle, { color: theme.text }]}>
+                                    Nouvelle Transaction
+                                </ThemedText>
+                                <ThemedText style={[styles.modalSubtitle, { color: isLight ? "#666" : "#AAA" }]}>
+                                    Ajoutez vos revenus ou dépenses
+                                </ThemedText>
+                            </View>
+                            <TouchableOpacity 
+                                style={[styles.closeButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
+                                onPress={() => setShowAddModal(false)}
+                            >
+                                <Ionicons name="close" size={24} color={theme.text} />
                             </TouchableOpacity>
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false}>
                             {/* Type Selector */}
-                            <View style={styles.typeSelector}>
+                            <View style={styles.modernTypeSelector}>
                                 <TouchableOpacity
                                     style={[
-                                        styles.typeButton,
-                                        transactionType === "expense" && styles.typeButtonActive,
-                                        {
-                                            borderColor:
-                                                transactionType === "expense"
-                                                    ? "#FF6B6B"
-                                                    : theme.text,
-                                        },
+                                        styles.modernTypeButton,
+                                        transactionType === "expense" && styles.typeButtonExpenseActive,
+                                        { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }
                                     ]}
                                     onPress={() => setTransactionType("expense")}
+                                    activeOpacity={0.7}
                                 >
-                                    <Text
-                                        style={[
-                                            styles.typeButtonText,
-                                            {
-                                                color:
-                                                    transactionType === "expense"
-                                                        ? "#FF6B6B"
-                                                        : theme.text,
-                                            },
-                                        ]}
-                                    >
-                                        Dépense
-                                    </Text>
+                                    {transactionType === "expense" && (
+                                        <LinearGradient
+                                            colors={["#FF6B6B", "#EE5A52"]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.typeButtonGradient}
+                                        />
+                                    )}
+                                    <View style={styles.typeButtonContent}>
+                                        <Ionicons
+                                            name="arrow-up-circle"
+                                            size={24}
+                                            color={transactionType === "expense" ? "#FFF" : (isLight ? "#666" : "#AAA")}
+                                        />
+                                        <ThemedText
+                                            style={[
+                                                styles.modernTypeButtonText,
+                                                { color: transactionType === "expense" ? "#FFF" : (isLight ? "#666" : "#AAA") }
+                                            ]}
+                                        >
+                                            Dépense
+                                        </ThemedText>
+                                    </View>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
                                     style={[
-                                        styles.typeButton,
-                                        transactionType === "income" && styles.typeButtonActive,
-                                        {
-                                            borderColor:
-                                                transactionType === "income"
-                                                    ? "#4ADE80"
-                                                    : theme.text,
-                                        },
+                                        styles.modernTypeButton,
+                                        transactionType === "income" && styles.typeButtonIncomeActive,
+                                        { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }
                                     ]}
                                     onPress={() => setTransactionType("income")}
+                                    activeOpacity={0.7}
                                 >
-                                    <Text
-                                        style={[
-                                            styles.typeButtonText,
-                                            {
-                                                color:
-                                                    transactionType === "income"
-                                                        ? "#4ADE80"
-                                                        : theme.text,
-                                            },
-                                        ]}
-                                    >
-                                        Revenu
-                                    </Text>
+                                    {transactionType === "income" && (
+                                        <LinearGradient
+                                            colors={["#4ADE80", "#22C55E"]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.typeButtonGradient}
+                                        />
+                                    )}
+                                    <View style={styles.typeButtonContent}>
+                                        <Ionicons
+                                            name="arrow-down-circle"
+                                            size={24}
+                                            color={transactionType === "income" ? "#FFF" : (isLight ? "#666" : "#AAA")}
+                                        />
+                                        <ThemedText
+                                            style={[
+                                                styles.modernTypeButtonText,
+                                                { color: transactionType === "income" ? "#FFF" : (isLight ? "#666" : "#AAA") }
+                                            ]}
+                                        >
+                                            Revenu
+                                        </ThemedText>
+                                    </View>
                                 </TouchableOpacity>
                             </View>
 
                             {/* Title Input */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: theme.text }]}>Titre</Text>
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        {
-                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
-                                            color: theme.text,
-                                        },
-                                    ]}
-                                    placeholder="Ex: Courses, Salaire..."
-                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
-                                    value={title}
-                                    onChangeText={setTitle}
-                                />
+                            <View style={styles.modernInputGroup}>
+                                <ThemedText style={[styles.modernInputLabel, { color: theme.text }]}>
+                                    Titre
+                                </ThemedText>
+                                <View style={[styles.modernInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                                    <Ionicons name="pencil-outline" size={20} color={isLight ? "#999" : "#666"} />
+                                    <TextInput
+                                        style={[styles.modernInput, { color: theme.text }]}
+                                        placeholder="Ex: Courses, Salaire..."
+                                        placeholderTextColor={isLight ? "#999" : "#666"}
+                                        value={title}
+                                        onChangeText={setTitle}
+                                    />
+                                </View>
                             </View>
 
                             {/* Category Selector */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: theme.text }]}>
+                            <View style={styles.modernInputGroup}>
+                                <ThemedText style={[styles.modernInputLabel, { color: theme.text }]}>
                                     Catégorie
-                                </Text>
+                                </ThemedText>
                                 <ScrollView
                                     horizontal
                                     showsHorizontalScrollIndicator={false}
@@ -443,14 +599,14 @@ export default function TransactionPage() {
                                         <TouchableOpacity
                                             key={cat.name}
                                             style={[
-                                                styles.categoryChip,
+                                                styles.modernCategoryChip,
                                                 {
                                                     backgroundColor:
                                                         category === cat.name
                                                             ? cat.color + "20"
                                                             : isLight
                                                                 ? "#F5F5F5"
-                                                                : "#2A2A2A",
+                                                                : "#1F1F1F",
                                                     borderColor:
                                                         category === cat.name
                                                             ? cat.color
@@ -458,19 +614,23 @@ export default function TransactionPage() {
                                                 },
                                             ]}
                                             onPress={() => setCategory(cat.name)}
+                                            activeOpacity={0.7}
                                         >
-                                            <Ionicons
-                                                name={cat.icon as any}
-                                                size={20}
-                                                color={
-                                                    category === cat.name
-                                                        ? cat.color
-                                                        : theme.text
-                                                }
-                                            />
-                                            <Text
+                                            <View 
                                                 style={[
-                                                    styles.categoryChipText,
+                                                    styles.categoryChipIcon,
+                                                    { backgroundColor: category === cat.name ? cat.color + "30" : (isLight ? "#E5E5E5" : "#2A2A2A") }
+                                                ]}
+                                            >
+                                                <Ionicons
+                                                    name={cat.icon as any}
+                                                    size={18}
+                                                    color={category === cat.name ? cat.color : (isLight ? "#666" : "#AAA")}
+                                                />
+                                            </View>
+                                            <ThemedText
+                                                style={[
+                                                    styles.modernCategoryChipText,
                                                     {
                                                         color:
                                                             category === cat.name
@@ -480,53 +640,54 @@ export default function TransactionPage() {
                                                 ]}
                                             >
                                                 {cat.name}
-                                            </Text>
+                                            </ThemedText>
                                         </TouchableOpacity>
                                     ))}
                                 </ScrollView>
                             </View>
 
                             {/* Amount Input */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: theme.text }]}>
-                                    Montant (Ar)
-                                </Text>
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        {
-                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
-                                            color: theme.text,
-                                        },
-                                    ]}
-                                    placeholder="0"
-                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
-                                    keyboardType="numeric"
-                                    value={amount}
-                                    onChangeText={setAmount}
-                                />
+                            <View style={styles.modernInputGroup}>
+                                <ThemedText style={[styles.modernInputLabel, { color: theme.text }]}>
+                                    Montant
+                                </ThemedText>
+                                <View style={[styles.modernInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                                    <Ionicons name="cash-outline" size={20} color={isLight ? "#999" : "#666"} />
+                                    <TextInput
+                                        style={[styles.modernInput, { color: theme.text }]}
+                                        placeholder="0"
+                                        placeholderTextColor={isLight ? "#999" : "#666"}
+                                        keyboardType="numeric"
+                                        value={amount}
+                                        onChangeText={setAmount}
+                                    />
+                                    <ThemedText style={[styles.currencyLabel, { color: isLight ? "#999" : "#666" }]}>
+                                        Ar
+                                    </ThemedText>
+                                </View>
                             </View>
 
                             {/* Date Picker */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: theme.text }]}>Date</Text>
+                            <View style={styles.modernInputGroup}>
+                                <ThemedText style={[styles.modernInputLabel, { color: theme.text }]}>
+                                    Date
+                                </ThemedText>
                                 <TouchableOpacity
                                     style={[
-                                        styles.input,
-                                        {
-                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
-                                            justifyContent: "center",
-                                        },
+                                        styles.modernInputContainer,
+                                        { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }
                                     ]}
                                     onPress={() => setShowDatePicker(true)}
                                 >
-                                    <Text style={{ color: theme.text }}>
+                                    <Ionicons name="calendar-outline" size={20} color={isLight ? "#999" : "#666"} />
+                                    <ThemedText style={[styles.modernInput, { color: theme.text }]}>
                                         {date.toLocaleDateString("fr-FR", {
                                             day: "numeric",
                                             month: "long",
                                             year: "numeric",
                                         })}
-                                    </Text>
+                                    </ThemedText>
+                                    <Ionicons name="chevron-down" size={20} color={isLight ? "#999" : "#666"} />
                                 </TouchableOpacity>
                             </View>
 
@@ -543,38 +704,48 @@ export default function TransactionPage() {
                             )}
 
                             {/* Description Input */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: theme.text }]}>
+                            <View style={styles.modernInputGroup}>
+                                <ThemedText style={[styles.modernInputLabel, { color: theme.text }]}>
                                     Description (optionnel)
-                                </Text>
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        styles.textArea,
-                                        {
-                                            backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A",
-                                            color: theme.text,
-                                        },
-                                    ]}
-                                    placeholder="Ajouter une note..."
-                                    placeholderTextColor={isLight ? "#2A2A2A" : "#F5F5F5"}
-                                    multiline
-                                    numberOfLines={3}
-                                    value={description}
-                                    onChangeText={setDescription}
-                                />
+                                </ThemedText>
+                                <View style={[styles.modernTextAreaContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                                    <Ionicons name="document-text-outline" size={20} color={isLight ? "#999" : "#666"} style={styles.textAreaIcon} />
+                                    <TextInput
+                                        style={[styles.modernTextArea, { color: theme.text }]}
+                                        placeholder="Ajouter une note..."
+                                        placeholderTextColor={isLight ? "#999" : "#666"}
+                                        multiline
+                                        numberOfLines={3}
+                                        value={description}
+                                        onChangeText={setDescription}
+                                    />
+                                </View>
                             </View>
 
                             {/* Submit Button */}
                             <TouchableOpacity
                                 style={[
-                                    styles.submitButton,
+                                    styles.modernSubmitButton,
                                     (!title || !category || !amount) && styles.submitButtonDisabled,
                                 ]}
                                 onPress={handleAddTransaction}
                                 disabled={!title || !category || !amount}
+                                activeOpacity={0.8}
                             >
-                                <Text style={styles.submitButtonText}>Ajouter la transaction</Text>
+                                <LinearGradient
+                                    colors={(!title || !category || !amount) 
+                                        ? ["#CCC", "#AAA"] 
+                                        : [Colors.primary, adjustColorBrightness(Colors.primary, -20)]
+                                    }
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.submitButtonGradient}
+                                >
+                                    <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                                    <ThemedText style={styles.modernSubmitButtonText}>
+                                        Ajouter la transaction
+                                    </ThemedText>
+                                </LinearGradient>
                             </TouchableOpacity>
                         </ScrollView>
                     </View>
@@ -593,88 +764,113 @@ export default function TransactionPage() {
                         style={[
                             styles.modalContent,
                             styles.filterModal,
-                            { backgroundColor: isLight ? "#FFF" : "#1F1F1F" },
+                            { backgroundColor: isLight ? "#FFF" : "#151515" },
                         ]}
                     >
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: theme.text }]}>Filtres</Text>
-                            <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                                <Ionicons name="close" size={28} color={theme.text} />
+                            <View>
+                                <ThemedText style={[styles.modalTitle, { color: theme.text }]}>
+                                    Filtres
+                                </ThemedText>
+                                <ThemedText style={[styles.modalSubtitle, { color: isLight ? "#666" : "#AAA" }]}>
+                                    Affinez votre recherche
+                                </ThemedText>
+                            </View>
+                            <TouchableOpacity 
+                                style={[styles.closeButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
+                                onPress={() => setShowFilterModal(false)}
+                            >
+                                <Ionicons name="close" size={24} color={theme.text} />
                             </TouchableOpacity>
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false}>
                             {/* Type Filter */}
-                            <View style={styles.filterSection}>
-                                <Text style={[styles.filterSectionTitle, { color: theme.text }]}>
-                                    Type
-                                </Text>
-                                <View style={styles.filterOptions}>
-                                    {["all", "expense", "income"].map((type) => (
+                            <View style={styles.modernFilterSection}>
+                                <View style={styles.filterSectionHeader}>
+                                    <Ionicons name="swap-horizontal" size={20} color={Colors.primary} />
+                                    <ThemedText style={[styles.modernFilterSectionTitle, { color: theme.text }]}>
+                                        Type de transaction
+                                    </ThemedText>
+                                </View>
+                                <View style={styles.modernFilterOptions}>
+                                    {[
+                                        { key: "all", label: "Toutes", icon: "list" },
+                                        { key: "expense", label: "Dépenses", icon: "arrow-up-circle" },
+                                        { key: "income", label: "Revenus", icon: "arrow-down-circle" }
+                                    ].map((type) => (
                                         <TouchableOpacity
-                                            key={type}
+                                            key={type.key}
                                             style={[
-                                                styles.filterOption,
+                                                styles.modernFilterOption,
                                                 {
                                                     backgroundColor:
-                                                        filterType === type
-                                                            ? Colors.primary + "20"
+                                                        filterType === type.key
+                                                            ? Colors.primary + "15"
                                                             : isLight
                                                                 ? "#F5F5F5"
-                                                                : "#2A2A2A",
+                                                                : "#1F1F1F",
                                                     borderColor:
-                                                        filterType === type
+                                                        filterType === type.key
                                                             ? Colors.primary
                                                             : "transparent",
                                                 },
                                             ]}
-                                            onPress={() => setFilterType(type as any)}
+                                            onPress={() => setFilterType(type.key as any)}
+                                            activeOpacity={0.7}
                                         >
-                                            <Text
+                                            <Ionicons
+                                                name={type.icon as any}
+                                                size={20}
+                                                color={filterType === type.key ? Colors.primary : (isLight ? "#666" : "#AAA")}
+                                            />
+                                            <ThemedText
                                                 style={[
-                                                    styles.filterOptionText,
+                                                    styles.modernFilterOptionText,
                                                     {
                                                         color:
-                                                            filterType === type
+                                                            filterType === type.key
                                                                 ? Colors.primary
                                                                 : theme.text,
                                                     },
                                                 ]}
                                             >
-                                                {type === "all"
-                                                    ? "Tous"
-                                                    : type === "expense"
-                                                        ? "Dépenses"
-                                                        : "Revenus"}
-                                            </Text>
+                                                {type.label}
+                                            </ThemedText>
+                                            {filterType === type.key && (
+                                                <Ionicons name="checkmark-circle" size={18} color={Colors.primary} />
+                                            )}
                                         </TouchableOpacity>
                                     ))}
                                 </View>
                             </View>
 
                             {/* Period Filter */}
-                            <View style={styles.filterSection}>
-                                <Text style={[styles.filterSectionTitle, { color: theme.text }]}>
-                                    Période
-                                </Text>
-                                <View style={styles.filterOptions}>
+                            <View style={styles.modernFilterSection}>
+                                <View style={styles.filterSectionHeader}>
+                                    <Ionicons name="calendar" size={20} color={Colors.primary} />
+                                    <ThemedText style={[styles.modernFilterSectionTitle, { color: theme.text }]}>
+                                        Période
+                                    </ThemedText>
+                                </View>
+                                <View style={styles.modernFilterOptions}>
                                     {[
-                                        { key: "all", label: "Tout" },
-                                        { key: "today", label: "Aujourd'hui" },
-                                        { key: "week", label: "Cette semaine" },
-                                        { key: "month", label: "Ce mois" },
+                                        { key: "all", label: "Toutes", icon: "infinite" },
+                                        { key: "today", label: "Aujourd'hui", icon: "today" },
+                                        { key: "week", label: "Cette semaine", icon: "calendar-outline" },
+                                        { key: "month", label: "Ce mois", icon: "calendar" },
                                     ].map((period) => (
                                         <TouchableOpacity
                                             key={period.key}
                                             style={[
-                                                styles.filterOption,
+                                                styles.modernFilterOption,
                                                 {
                                                     backgroundColor:
                                                         filterPeriod === period.key
-                                                            ? Colors.primary + "20"
+                                                            ? Colors.primary + "15"
                                                             : isLight
                                                                 ? "#F5F5F5"
-                                                                : "#2A2A2A",
+                                                                : "#1F1F1F",
                                                     borderColor:
                                                         filterPeriod === period.key
                                                             ? Colors.primary
@@ -682,10 +878,16 @@ export default function TransactionPage() {
                                                 },
                                             ]}
                                             onPress={() => setFilterPeriod(period.key)}
+                                            activeOpacity={0.7}
                                         >
-                                            <Text
+                                            <Ionicons
+                                                name={period.icon as any}
+                                                size={20}
+                                                color={filterPeriod === period.key ? Colors.primary : (isLight ? "#666" : "#AAA")}
+                                            />
+                                            <ThemedText
                                                 style={[
-                                                    styles.filterOptionText,
+                                                    styles.modernFilterOptionText,
                                                     {
                                                         color:
                                                             filterPeriod === period.key
@@ -695,23 +897,50 @@ export default function TransactionPage() {
                                                 ]}
                                             >
                                                 {period.label}
-                                            </Text>
+                                            </ThemedText>
+                                            {filterPeriod === period.key && (
+                                                <Ionicons name="checkmark-circle" size={18} color={Colors.primary} />
+                                            )}
                                         </TouchableOpacity>
                                     ))}
                                 </View>
                             </View>
 
-                            {/* Reset Button */}
-                            <TouchableOpacity
-                                style={styles.resetButton}
-                                onPress={() => {
-                                    setFilterType("all");
-                                    setFilterPeriod("all");
-                                    setFilterCategory("all");
-                                }}
-                            >
-                                <Text style={styles.resetButtonText}>Réinitialiser les filtres</Text>
-                            </TouchableOpacity>
+                            {/* Action Buttons */}
+                            <View style={styles.filterActions}>
+                                <TouchableOpacity
+                                    style={[styles.modernResetButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
+                                    onPress={() => {
+                                        setFilterType("all");
+                                        setFilterPeriod("all");
+                                        setFilterCategory("all");
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons name="refresh" size={20} color={theme.text} />
+                                    <ThemedText style={[styles.modernResetButtonText, { color: theme.text }]}>
+                                        Réinitialiser
+                                    </ThemedText>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.modernApplyButton}
+                                    onPress={() => setShowFilterModal(false)}
+                                    activeOpacity={0.8}
+                                >
+                                    <LinearGradient
+                                        colors={[Colors.primary, adjustColorBrightness(Colors.primary, -20)]}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                        style={styles.applyButtonGradient}
+                                    >
+                                        <Ionicons name="checkmark" size={20} color="#FFF" />
+                                        <ThemedText style={styles.modernApplyButtonText}>
+                                            Appliquer
+                                        </ThemedText>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </View>
                         </ScrollView>
                     </View>
                 </View>
@@ -719,243 +948,3 @@ export default function TransactionPage() {
         </ThemedSafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    header: {
-        paddingBottom: 20,
-        paddingHorizontal: 16
-    },
-    headerTitle: {
-        fontSize: 28,
-        fontWeight: "bold",
-        marginVertical: 16,
-    },
-    searchBar: {
-        width: "85%",
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 5,
-        borderRadius: 5,
-        gap: 12,
-    },
-    searchInput: {
-        fontSize: 16,
-    },
-    filterButton: {
-        padding: 15,
-        borderRadius: 5,
-        backgroundColor: Colors.primary + "20",
-    },
-    filterBadge: {
-        position: "absolute",
-        top: -4,
-        right: -4,
-        backgroundColor: "#FF6B6B",
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    filterBadgeText: {
-        color: "#FFF",
-        fontSize: 10,
-        fontWeight: "bold",
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 24,
-    },
-    dateGroup: {
-        marginTop: 20,
-    },
-    dateHeader: {
-        fontSize: 14,
-        fontWeight: "600",
-        marginBottom: 12,
-        textTransform: "uppercase",
-    },
-    transactionCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        padding: 16,
-        borderRadius: 6,
-        marginBottom: 12,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.01,
-        shadowRadius: 8,
-        elevation: 1,
-    },
-    iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 6,
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 12,
-    },
-    transactionInfo: {
-        flex: 1,
-    },
-    transactionTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        marginBottom: 4,
-    },
-    transactionCategory: {
-        fontSize: 13,
-    },
-    transactionAmount: {
-        fontSize: 18,
-        fontWeight: "700",
-    },
-    addButton: {
-        position: "absolute",
-        bottom: 120,
-        right: 24,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: Colors.primary,
-        justifyContent: "center",
-        alignItems: "center",
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 8,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        justifyContent: "flex-end",
-    },
-    modalContent: {
-        borderTopLeftRadius: 10,
-        borderTopRightRadius: 10,
-        paddingTop: 24,
-        paddingHorizontal: 24,
-        paddingBottom: 40,
-        maxHeight: "90%",
-    },
-    modalHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 24,
-    },
-    modalTitle: {
-        fontSize: 24,
-        fontWeight: "bold",
-    },
-    typeSelector: {
-        flexDirection: "row",
-        gap: 12,
-        marginBottom: 24,
-    },
-    typeButton: {
-        flex: 1,
-        paddingVertical: 16,
-        borderRadius: 6,
-        borderWidth: 2,
-        alignItems: "center",
-    },
-    typeButtonActive: {
-        borderWidth: 2,
-    },
-    typeButtonText: {
-        fontSize: 16,
-        fontWeight: "600",
-    },
-    inputGroup: {
-        marginBottom: 20,
-    },
-    inputLabel: {
-        fontSize: 14,
-        fontWeight: "600",
-        marginBottom: 8,
-    },
-    input: {
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderRadius: 6,
-        fontSize: 16,
-    },
-    textArea: {
-        height: 80,
-        textAlignVertical: "top",
-    },
-    categoryScroll: {
-        marginTop: 8,
-    },
-    categoryChip: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
-        marginRight: 8,
-        borderWidth: 1,
-        gap: 8,
-    },
-    categoryChipText: {
-        fontSize: 14,
-        fontWeight: "500",
-    },
-    submitButton: {
-        backgroundColor: Colors.primary,
-        paddingVertical: 16,
-        borderRadius: 6,
-        alignItems: "center",
-        marginTop: 24,
-    },
-    submitButtonDisabled: {
-        opacity: 0.5,
-    },
-    submitButtonText: {
-        color: "#FFF",
-        fontSize: 16,
-        fontWeight: "700",
-    },
-    filterModal: {
-        maxHeight: "70%",
-    },
-    filterSection: {
-        marginBottom: 24,
-    },
-    filterSectionTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        marginBottom: 12,
-    },
-    filterOptions: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 8,
-    },
-    filterOption: {
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 6,
-        borderWidth: 1,
-    },
-    filterOptionText: {
-        fontSize: 14,
-        fontWeight: "500",
-    },
-    resetButton: {
-        paddingVertical: 14,
-        borderRadius: 6,
-        alignItems: "center",
-        borderWidth: 2,
-        borderColor: Colors.primary,
-        marginTop: 12,
-    },
-    resetButtonText: {
-        color: Colors.primary,
-        fontSize: 16,
-        fontWeight: "600",
-    },
-});
