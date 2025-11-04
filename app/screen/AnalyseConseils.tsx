@@ -66,10 +66,8 @@ const FINANCIAL_INSIGHTS: FinancialInsight[] = [
 
 
 const AnalyseConseils = () => {
-
-
     const colorScheme = useColorScheme();
-    const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const isLight = theme === Colors.light;
     const router = useRouter();
     return (

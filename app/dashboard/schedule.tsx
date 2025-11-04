@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     View,
     Text,
@@ -21,6 +21,7 @@ import TopHeros from "@/components/Topheros";
 import Image from "@/constant/Images";
 import ThemedView from "@/components/ThemedView";
 import styles from "@/styles/schedule";
+import { Animated } from "react-native";
 
 // Types
 interface SavingsGoal {
@@ -128,9 +129,8 @@ const adjustColorBrightness = (color: string, amount: number): string => {
 
 export default function SavingsGoalsPage() {
     const colorScheme = useColorScheme();
-    const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const isLight = theme === Colors.light;
-
     const [goals, setGoals] = useState<SavingsGoal[]>(SAMPLE_GOALS);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showContributeModal, setShowContributeModal] = useState(false);
@@ -148,16 +148,6 @@ export default function SavingsGoalsPage() {
     const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
     const overallProgress = (totalSaved / totalTarget) * 100;
     const completedGoals = goals.filter(g => g.currentAmount >= g.targetAmount).length;
-
-    function formatNumber(num: number): string {
-        if (num >= 1_000_000) {
-            return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-        }
-        if (num >= 1_000) {
-            return (num / 1_000).toFixed(1).replace(/\.0$/, "") + "k";
-        }
-        return num.toString();
-    }
 
     const handleAddGoal = () => {
         if (!title || !targetAmount || !category) {
@@ -228,102 +218,154 @@ export default function SavingsGoalsPage() {
         setShowContributeModal(true);
     };
 
+    // Animations
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Animation d'entrée
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(slideAnim, {
+                toValue: 0,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        // Animation de rotation continue pour l'icône
+        const rotationAnimation = Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 20000,
+                useNativeDriver: true,
+            })
+        );
+        rotationAnimation.start();
+
+        return () => {
+            rotationAnimation.stop();
+        };
+    }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
     return (
-        <ThemedSafeAreaView style={{ backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }}>
+        <ThemedSafeAreaView style={{ backgroundColor: theme.background  }}>
             <View style={{ width: "100%", height: "auto", zIndex: 2 }}>
                 <TopHeros />
             </View>
 
             <ScrollView
-                style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }]}
+                style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : theme.background }]}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 120 }}
             >
                 {/* Modern Header */}
-                <LinearGradient
-                    colors={[Colors.primary, '#4ADE80', '#6366f1']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }} style={styles.headerContainer}>
-                    <ImageBackground
-                        source={Image.starBG}
-                        style={styles.headerBackground}
-                    >
-                        <View style={styles.headerContent}>
-                            <View style={styles.headerTop}>
-                                <View>
-                                    <Text style={styles.headerTitle}>Objectifs d'Épargne</Text>
-                                    <Text style={styles.headerSubtitle}>
-                                        Suivez vos progrès
+                <View
+                    style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 365, overflow: 'hidden' }}
+                >
+                    <LinearGradient
+                        colors={colorScheme === 'dark'
+                            ? ['#1a1a1a', '#2d2d2d', '#1a1a1a']
+                            : [Colors.primary, '#4ADE80', '#6366f1']}
+                        start={{ x: -0.5, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ zIndex: 0, width: "100%", height: "100%", position: 'absolute' }}>
+                        <Animated.View style={[styles.floatingCircle1, { transform: [{ rotate: spin }] }]} />
+                        <Animated.View style={[styles.floatingCircle2, { transform: [{ rotate: spin }] }]} />
+                    </LinearGradient>
+                    <View style={styles.headerContent}>
+                        <View style={styles.headerTop}>
+                            <View>
+                                <Text style={styles.headerTitle}>Objectifs d'Épargne</Text>
+                                <Text style={styles.headerSubtitle}>
+                                    Suivez vos progrès
+                                </Text>
+                            </View>
+                            <TouchableOpacity style={styles.headerIconButton}>
+                                <Ionicons name="analytics" size={24} color="#FFF" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Modern Overview Card */}
+                        <View style={styles.modernOverviewCard}>
+                            <View style={styles.overviewMainInfo}>
+                                <View style={styles.overviewLeft}>
+                                    <Text style={styles.overviewLabel}>Total épargné</Text>
+                                    <Text style={styles.overviewValue}>
+                                        {formatCurrency(totalSaved)}
+                                    </Text>
+                                    <View style={styles.overviewProgress}>
+                                        <View style={styles.progressBarContainer}>
+                                            <View
+                                                style={[
+                                                    styles.progressBarFill,
+                                                    { width: `${Math.min(overallProgress, 100)}%` }
+                                                ]}
+                                            />
+                                        </View>
+                                        <Text style={styles.progressPercentage}>
+                                            {overallProgress.toFixed(2)}%
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View style={styles.overviewDivider} />
+                                <View style={styles.overviewRight}>
+                                    <Text style={styles.overviewLabel}>Objectif total</Text>
+                                    <Text style={styles.overviewValue}>
+                                        {formatCurrency(totalTarget)}
                                     </Text>
                                 </View>
-                                <TouchableOpacity style={styles.headerIconButton}>
-                                    <Ionicons name="analytics" size={24} color="#FFF" />
-                                </TouchableOpacity>
                             </View>
 
-                            {/* Modern Overview Card */}
-                            <View style={styles.modernOverviewCard}>
-                                <View style={styles.overviewMainInfo}>
-                                    <View style={styles.overviewLeft}>
-                                        <Text style={styles.overviewLabel}>Total épargné</Text>
-                                        <Text style={styles.overviewValue}>
-                                            {formatCurrency(totalSaved)}
-                                        </Text>
-                                        <View style={styles.overviewProgress}>
-                                            <View style={styles.progressBarContainer}>
-                                                <View
-                                                    style={[
-                                                        styles.progressBarFill,
-                                                        { width: `${Math.min(overallProgress, 100)}%` }
-                                                    ]}
-                                                />
-                                            </View>
-                                            <Text style={styles.progressPercentage}>
-                                                {overallProgress.toFixed(2)}%
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.overviewDivider} />
-                                    <View style={styles.overviewRight}>
-                                        <Text style={styles.overviewLabel}>Objectif total</Text>
-                                        <Text style={styles.overviewValue}>
-                                            {formatCurrency(totalTarget)}
-                                        </Text>
-                                    </View>
+                            <View style={styles.statsContainer}>
+                                <View style={styles.modernStatBadge}>
+                                    <LinearGradient
+                                        colors={["#FFD700", "#FFA500"]}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                        style={styles.statBadgeIcon}
+                                    >
+                                        <Ionicons name="trophy" size={16} color="#FFF" />
+                                    </LinearGradient>
+                                    <Text style={styles.statBadgeText}>
+                                        {completedGoals} atteints
+                                    </Text>
                                 </View>
-
-                                <View style={styles.statsContainer}>
-                                    <View style={styles.modernStatBadge}>
-                                        <LinearGradient
-                                            colors={["#FFD700", "#FFA500"]}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 1 }}
-                                            style={styles.statBadgeIcon}
-                                        >
-                                            <Ionicons name="trophy" size={16} color="#FFF" />
-                                        </LinearGradient>
-                                        <Text style={styles.statBadgeText}>
-                                            {completedGoals} atteints
-                                        </Text>
-                                    </View>
-                                    <View style={styles.modernStatBadge}>
-                                        <LinearGradient
-                                            colors={["#22D3EE", "#0EA5E9"]}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 1 }}
-                                            style={styles.statBadgeIcon}
-                                        >
-                                            <Ionicons name="flag" size={16} color="#FFF" />
-                                        </LinearGradient>
-                                        <Text style={styles.statBadgeText}>
-                                            {goals.length} actifs
-                                        </Text>
-                                    </View>
+                                <View style={styles.modernStatBadge}>
+                                    <LinearGradient
+                                        colors={["#22D3EE", "#0EA5E9"]}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                        style={styles.statBadgeIcon}
+                                    >
+                                        <Ionicons name="flag" size={16} color="#FFF" />
+                                    </LinearGradient>
+                                    <Text style={styles.statBadgeText}>
+                                        {goals.length} actifs
+                                    </Text>
                                 </View>
                             </View>
                         </View>
-                    </ImageBackground>
-                </LinearGradient>
+                    </View>
+                </View>
 
                 {/* Goals Section */}
                 <View style={styles.section}>

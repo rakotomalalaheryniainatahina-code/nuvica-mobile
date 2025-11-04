@@ -46,9 +46,10 @@ const AnimatedTabIcon = ({ focused, Icon, size }: any) => {
     );
 };
 
-const CentralWalletButton = ({ theme }: { theme: Theme }) => {
+const CentralWalletButton = () => {
     const scale = useRef(new Animated.Value(1)).current;
-
+    const colorScheme = useColorScheme();
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const handlePressIn = () => {
         Animated.spring(scale, {
             toValue: 0.9,
@@ -99,14 +100,14 @@ const CentralWalletButton = ({ theme }: { theme: Theme }) => {
 
 export default function DashboardLayout() {
     const colorScheme = useColorScheme();
-    const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const router = useRouter();
+    const isLightMode = theme === Colors.light;
 
     useEffect(() => {
         router.replace("/dashboard/home");
     }, []);
 
-    const isLightMode = theme === Colors.light;
 
     return (
         <>
@@ -181,7 +182,7 @@ export default function DashboardLayout() {
                     name="wallet"
                     options={{
                         title: "",
-                        tabBarIcon: () => <CentralWalletButton theme={theme} />,
+                        tabBarIcon: () => <CentralWalletButton />,
                     }}
                 />
                 <Tabs.Screen

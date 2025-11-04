@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import {
     View,
-    Text,
     ScrollView,
-    StyleSheet,
     useColorScheme,
     TouchableOpacity,
     TextInput,
@@ -11,16 +9,12 @@ import {
     Dimensions,
 } from "react-native";
 import { Colors } from "@/constant/Colors";
-import { Theme } from "@/types/ColorType";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import ThemedView from "@/components/ThemedView";
 import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
 import { LinearGradient } from "expo-linear-gradient";
 import ThemedText from "@/components/ThemedText";
 import styles from "@/styles/transaction";
-
-const { width } = Dimensions.get("window");
 
 // Types
 interface Transaction {
@@ -128,7 +122,7 @@ const adjustColorBrightness = (color: string, amount: number): string => {
 
 export default function TransactionPage() {
     const colorScheme = useColorScheme();
-    const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const isLight = theme === Colors.light;
 
     const [transactions, setTransactions] = useState<Transaction[]>(SAMPLE_TRANSACTIONS);
@@ -225,7 +219,7 @@ export default function TransactionPage() {
         .reduce((sum, t) => sum + t.amount, 0);
 
     return (
-        <ThemedSafeAreaView style={{ backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }}>
+        <ThemedSafeAreaView style={{ backgroundColor: theme.background }}>
             {/* Modern Header */}
             <View style={[styles.modernHeader, { backgroundColor: isLight ? "#FFFFFF" : "#151515" }]}>
                 <View style={styles.headerTop}>
@@ -235,7 +229,7 @@ export default function TransactionPage() {
                             {filteredTransactions.length} transactions
                         </ThemedText>
                     </View>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.headerIconButton}
                         onPress={() => setShowFilterModal(true)}
                     >
@@ -312,8 +306,8 @@ export default function TransactionPage() {
             </View>
 
             {/* Transaction List */}
-            <ScrollView 
-                style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }]} 
+            <ScrollView
+                style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : theme.background }]}
                 showsVerticalScrollIndicator={false}
             >
                 {Object.entries(groupedTransactions).map(([dateKey, items]) => (
@@ -375,11 +369,11 @@ export default function TransactionPage() {
                                                     {transaction.title}
                                                 </ThemedText>
                                                 <View style={styles.categoryBadge}>
-                                                    <View 
+                                                    <View
                                                         style={[
-                                                            styles.categoryDot, 
+                                                            styles.categoryDot,
                                                             { backgroundColor: categoryData?.color || Colors.primary }
-                                                        ]} 
+                                                        ]}
                                                     />
                                                     <ThemedText style={[styles.modernTransactionCategory, { color: isLight ? "#666" : "#AAA" }]}>
                                                         {transaction.category}
@@ -398,7 +392,7 @@ export default function TransactionPage() {
                                             >
                                                 {isIncome ? "+" : "-"}{formatCurrency(transaction.amount)}
                                             </ThemedText>
-                                            <View 
+                                            <View
                                                 style={[
                                                     styles.typeBadge,
                                                     { backgroundColor: isIncome ? "#4ADE8015" : "#FF6B6B15" }
@@ -409,7 +403,7 @@ export default function TransactionPage() {
                                                     size={12}
                                                     color={isIncome ? "#4ADE80" : "#FF6B6B"}
                                                 />
-                                                <ThemedText 
+                                                <ThemedText
                                                     style={[
                                                         styles.typeBadgeText,
                                                         { color: isIncome ? "#4ADE80" : "#FF6B6B" }
@@ -485,7 +479,7 @@ export default function TransactionPage() {
                                     Ajoutez vos revenus ou dépenses
                                 </ThemedText>
                             </View>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[styles.closeButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
                                 onPress={() => setShowAddModal(false)}
                             >
@@ -616,7 +610,7 @@ export default function TransactionPage() {
                                             onPress={() => setCategory(cat.name)}
                                             activeOpacity={0.7}
                                         >
-                                            <View 
+                                            <View
                                                 style={[
                                                     styles.categoryChipIcon,
                                                     { backgroundColor: category === cat.name ? cat.color + "30" : (isLight ? "#E5E5E5" : "#2A2A2A") }
@@ -733,8 +727,8 @@ export default function TransactionPage() {
                                 activeOpacity={0.8}
                             >
                                 <LinearGradient
-                                    colors={(!title || !category || !amount) 
-                                        ? ["#CCC", "#AAA"] 
+                                    colors={(!title || !category || !amount)
+                                        ? ["#CCC", "#AAA"]
                                         : [Colors.primary, adjustColorBrightness(Colors.primary, -20)]
                                     }
                                     start={{ x: 0, y: 0 }}
@@ -776,7 +770,7 @@ export default function TransactionPage() {
                                     Affinez votre recherche
                                 </ThemedText>
                             </View>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[styles.closeButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
                                 onPress={() => setShowFilterModal(false)}
                             >

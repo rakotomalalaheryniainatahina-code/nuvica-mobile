@@ -1,7 +1,7 @@
 import Topheros from "@/components/Topheros"
 import ThemedSafeAreaView from "@/components/ThemedSafeAreaView"
 import ThemedScrollView from "@/components/ThemedScrollView"
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, useColorScheme, View, Dimensions } from "react-native"
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, useColorScheme, View, Dimensions, Animated } from "react-native"
 import ThemedView from '@/components/ThemedView';
 import { Colors } from "@/constant/Colors";
 import Image from "@/constant/Images";
@@ -12,6 +12,8 @@ import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
 import styles from "@/styles/home";
+import LogoutButton from "@/common/logoutButton";
+import { useEffect, useRef } from "react";
 
 const { width } = Dimensions.get("window");
 
@@ -70,7 +72,7 @@ const SAMPLE_DATA = {
 
 const Home = () => {
     const colorScheme = useColorScheme();
-    const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const isLight = theme === Colors.light;
     const vola: number = 5000;
     const pourcent: number = 50;
@@ -83,110 +85,165 @@ const Home = () => {
         }).format(amount);
     };
 
+    // Animations
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Animation d'entrée
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(slideAnim, {
+                toValue: 0,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        // Animation de rotation continue pour l'icône
+        const rotationAnimation = Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 20000,
+                useNativeDriver: true,
+            })
+        );
+        rotationAnimation.start();
+
+        return () => {
+            rotationAnimation.stop();
+        };
+    }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
     return (
-        <ThemedSafeAreaView style={{ backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }}>
+        <ThemedSafeAreaView style={{ backgroundColor: theme.background }}>
+
             <ThemedScrollView stickyHeaderIndices={[0]}>
                 <View style={{ width: "100%", height: "auto", zIndex: 2 }}>
                     <Topheros />
                 </View>
 
-                {/* Header Premium */}
-                <LinearGradient
-                    colors={[Colors.primary, '#4ADE80', '#6366f1']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }} style={styles.header}>
-                    <ImageBackground
-                        source={Image.starBG}
-                        style={styles.headerBackground}
-                    // imageStyle={{ opacity: 0.15 }}
-                    >
-                        <View style={styles.headerContent}>
-                            {/* Solde Principal */}
-                            <View style={styles.balanceContainer}>
-                                <View style={styles.balanceTop}>
-                                    <View>
-                                        <ThemedText style={styles.balanceLabel}>
-                                            Solde actuel
-                                        </ThemedText>
-                                        <ThemedText style={styles.balanceAmount}>
-                                            {formatCurrency(vola)}
-                                        </ThemedText>
-                                    </View>
-                                    <TouchableOpacity style={styles.percentBadge}>
-                                        <Ionicons name="trending-up" size={18} color="#FFF" />
-                                        <ThemedText style={styles.percentText}>
-                                            +{pourcent.toFixed(1)}%
-                                        </ThemedText>
-                                    </TouchableOpacity>
-                                </View>
+                {/* <LogoutButton /> */}
 
-                                <View style={styles.balanceInfo}>
-                                    <Ionicons name="wallet-outline" size={16} color="rgba(255, 255, 255, 0.8)" />
-                                    <ThemedText style={styles.balanceSubtext}>
-                                        Mis à jour il y a 5 min
+                {/* Header Premium */}
+
+                <View
+                    style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 295, overflow: 'hidden' }}
+                >
+                    <LinearGradient
+                        colors={colorScheme === 'dark'
+                            ? ['#1a1a1a', '#2d2d2d', '#1a1a1a']
+                            : [Colors.primary, '#4ADE80', '#6366f1']}
+                        start={{ x: -0.5, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ zIndex: 0, width: "100%", height: "100%", position: 'absolute' }}>
+                        <Animated.View style={[styles.floatingCircle1, { transform: [{ rotate: spin }] }]} />
+                        <Animated.View style={[styles.floatingCircle2, { transform: [{ rotate: spin }] }]} />
+                    </LinearGradient>
+                    <View style={styles.headerContent}>
+                        {/* Solde Principal */}
+                        <View style={styles.balanceContainer}>
+                            <View style={styles.balanceTop}>
+                                <View>
+                                    <ThemedText style={styles.balanceLabel}>
+                                        Solde actuel
+                                    </ThemedText>
+                                    <ThemedText style={styles.balanceAmount}>
+                                        {formatCurrency(vola)}
+                                    </ThemedText>
+                                </View>
+                                <TouchableOpacity style={styles.percentBadge}>
+                                    <Ionicons name="trending-up" size={18} color="#FFF" />
+                                    <ThemedText style={styles.percentText}>
+                                        +{pourcent.toFixed(1)}%
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.balanceInfo}>
+                                <Ionicons name="wallet-outline" size={16} color="rgba(255, 255, 255, 0.8)" />
+                                <ThemedText style={styles.balanceSubtext}>
+                                    Mis à jour il y a 5 min
+                                </ThemedText>
+                            </View>
+                        </View>
+
+                        {/* Quick Stats Modernes */}
+                        <View style={styles.quickStatsContainer}>
+                            <View style={styles.statCard}>
+                                <LinearGradient
+                                    colors={["#FB923C", "#EA580C"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.statIconGradient}
+                                >
+                                    <Ionicons name="trending-up" size={20} color="#FFF" />
+                                </LinearGradient>
+                                <View>
+                                    <ThemedText style={styles.statLabel}>Total</ThemedText>
+                                    <ThemedText style={styles.statValue}>
+                                        {formatCurrency(vola)}
                                     </ThemedText>
                                 </View>
                             </View>
 
-                            {/* Quick Stats Modernes */}
-                            <View style={styles.quickStatsContainer}>
-                                <View style={styles.statCard}>
-                                    <LinearGradient
-                                        colors={["#FB923C", "#EA580C"]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                        style={styles.statIconGradient}
-                                    >
-                                        <Ionicons name="trending-up" size={20} color="#FFF" />
-                                    </LinearGradient>
-                                    <View>
-                                        <ThemedText style={styles.statLabel}>Total</ThemedText>
-                                        <ThemedText style={styles.statValue}>
-                                            {formatCurrency(vola)}
-                                        </ThemedText>
-                                    </View>
+                            <View style={styles.statCard}>
+                                <LinearGradient
+                                    colors={["#4ADE80", "#16A34A"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.statIconGradient}
+                                >
+                                    <Ionicons name="arrow-up-circle" size={20} color="#FFF" />
+                                </LinearGradient>
+                                <View>
+                                    <ThemedText style={styles.statLabel}>Revenus</ThemedText>
+                                    <ThemedText style={styles.statValue}>
+                                        {formatCurrency(vola)}
+                                    </ThemedText>
                                 </View>
+                            </View>
 
-                                <View style={styles.statCard}>
-                                    <LinearGradient
-                                        colors={["#4ADE80", "#16A34A"]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                        style={styles.statIconGradient}
-                                    >
-                                        <Ionicons name="arrow-up-circle" size={20} color="#FFF" />
-                                    </LinearGradient>
-                                    <View>
-                                        <ThemedText style={styles.statLabel}>Revenus</ThemedText>
-                                        <ThemedText style={styles.statValue}>
-                                            {formatCurrency(vola)}
-                                        </ThemedText>
-                                    </View>
-                                </View>
-
-                                <View style={styles.statCard}>
-                                    <LinearGradient
-                                        colors={["#F87171", "#DC2626"]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                        style={styles.statIconGradient}
-                                    >
-                                        <Ionicons name="arrow-down-circle" size={20} color="#FFF" />
-                                    </LinearGradient>
-                                    <View>
-                                        <ThemedText style={styles.statLabel}>Dépenses</ThemedText>
-                                        <ThemedText style={styles.statValue}>
-                                            {formatCurrency(vola)}
-                                        </ThemedText>
-                                    </View>
+                            <View style={styles.statCard}>
+                                <LinearGradient
+                                    colors={["#F87171", "#DC2626"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.statIconGradient}
+                                >
+                                    <Ionicons name="arrow-down-circle" size={20} color="#FFF" />
+                                </LinearGradient>
+                                <View>
+                                    <ThemedText style={styles.statLabel}>Dépenses</ThemedText>
+                                    <ThemedText style={styles.statValue}>
+                                        {formatCurrency(vola)}
+                                    </ThemedText>
                                 </View>
                             </View>
                         </View>
-                    </ImageBackground>
-                </LinearGradient>
+                    </View>
+                </View>
 
                 {/* Content Section */}
-                <ThemedView style={[styles.contentContainer, { backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }]}>
+                <ThemedView style={[styles.contentContainer, { backgroundColor: isLight ? "#F5F5F7" : theme.background }]}>
                     {/* Section Header */}
                     <View style={styles.sectionHeader}>
                         <View>
@@ -221,7 +278,7 @@ const Home = () => {
                                     >
                                         {/* Status Badge */}
                                         {isOverBudget && (
-                                            <View style={[styles.overBudgetBadge, {alignSelf: "flex-end"}]}>
+                                            <View style={[styles.overBudgetBadge, { alignSelf: "flex-end" }]}>
                                                 <Ionicons name="alert-circle" size={12} color="#FF6B6B" />
                                                 <ThemedText style={styles.overBudgetText}>Dépassé</ThemedText>
                                             </View>
@@ -346,8 +403,11 @@ const Home = () => {
                     )}
 
                     <View style={{ height: 100 }} />
+
                 </ThemedView>
+
             </ThemedScrollView>
+
         </ThemedSafeAreaView>
     );
 };

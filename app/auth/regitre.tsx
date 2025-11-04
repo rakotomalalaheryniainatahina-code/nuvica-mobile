@@ -1,82 +1,691 @@
-import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
-import ThemedView from "@/components/ThemedView";
-import { Colors } from "@/constant/Colors";
-import { Image, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
-import { useColorScheme } from "react-native";
-import ThemedPressable from '../../components/ThemedPressable';
-import GoogleImage from "@/assets/icons/google.svg";
-import Separator from "@/components/Separator";
-import { Link, useRouter } from "expo-router";
-import { useState } from "react";
-import ThemedText from "@/components/ThemedText";
-import { Text } from "react-native";
+import CustomAlert from '@/common/customAlert';
+import ThemedSafeAreaView from '@/components/ThemedSafeAreaView';
+import ThemedText from '@/components/ThemedText';
+import ThemedView from '@/components/ThemedView';
+import { Colors } from '@/constant/Colors';
+import { authService } from '@/services/authService';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Link, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated } from 'react-native';
+import {
+    View,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    useColorScheme,
+} from 'react-native';
 
-
-const Regitre = () => {
+export default function RegisterScreen() {
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
     const colorScheme = useColorScheme();
-    const route = useRouter()
-    const [email , setEmail] = useState<string>("")
     const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
+    const router = useRouter();
+    const [message, setMessage] = useState('');
+    const [showAlert, setShowAlert] = useState(false);
+    const [showAlertError, setShowAlertError] = useState(false);
 
-    const handleGoogleLogin = () => {
-        console.log('Continue with Google');
+    const handleRegister = async () => {
+        if (!email || !phone || !password) {
+            setMessage('Veuillez remplir tous les champs.');
+            setShowAlertError(true);
+            setTimeout(() => {
+                setShowAlertError(false);
+            }, 6000);
+            return;
+        }
+
+        if (password.length < 8) {
+            setMessage('Le mot de passe doit contenir au moins 8 caractères.');
+            setShowAlertError(true);
+            setTimeout(() => {
+                setShowAlertError(false);
+            }, 6000);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await authService.register(email, phone, password);
+            setMessage(result.message);
+            setShowAlert(true);
+            router.push({
+                pathname: "/auth/verify",
+                params: { email },
+            });
+        } catch (error: any) {
+            setMessage(error.toString());
+            setShowAlertError(true);
+            setTimeout(() => {
+                setShowAlertError(false);
+            }, 6000);
+        } finally {
+            setLoading(false);
+        }
     };
 
+    // Animations
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Animation d'entrée
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(slideAnim, {
+                toValue: 0,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        // Animation de rotation continue pour l'icône
+        const rotationAnimation = Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 20000,
+                useNativeDriver: true,
+            })
+        );
+        rotationAnimation.start();
+
+        return () => {
+            rotationAnimation.stop();
+        };
+    }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
     return (
-        <ThemedSafeAreaView style={{ position: "relative", flex: 1, justifyContent: "space-between" }}>
-            <ThemedView style={{ zIndex: 2, position: "absolute", flex: 1, gap: 20, marginHorizontal: "auto", width: "100%", height: "100%", backgroundColor: "transparent", justifyContent: "center", alignItems: "center" }}>
-                                <Image source={require("@/assets/images/logo_white.png")} style={{ width: 60, height: 60, objectFit: "contain", borderRadius:10 }} />
-                <ThemedText style={{ color: "#fff", textAlign: "center", fontSize: 30, }}>Inscription</ThemedText>
-                <ThemedView style={{ width: "88%", padding: 20, height: "auto", backgroundColor: theme.bgSecondary, borderRadius: 6, justifyContent: "center", alignItems: "center", }}>
-                    <TextInput placeholder="Votre adresse email" value={email} onChange={(e) => setEmail(e.nativeEvent.text)} style={{ width: "100%", height: 50, borderRadius: 6, borderColor: theme.coloborder, borderWidth: 1, paddingHorizontal: 16, color: theme.text }} />
-                    <Separator style={{ height: 30 }} />
-                    <TextInput placeholder="Votre numero de téléphone" style={{ width: "100%", height: 50, borderRadius: 6, borderColor: theme.coloborder, borderWidth: 1, paddingHorizontal: 16, color: theme.text }} />
-                    <Separator style={{ height: 30 }} />
-                    <TextInput placeholder="Votre mot de passe" secureTextEntry style={{ width: "100%", height: 50, borderRadius: 6, borderColor: theme.coloborder, borderWidth: 1, paddingHorizontal: 16, color: theme.text }} />
-                    <Separator style={{ height: 40 }} />
-                    <ThemedPressable onPress={() => route.push(`/auth/verify?email=${email}`) } style={{ width: "100%", borderRadius: 6, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" }}>
-                        <ThemedText style={{ color: "#fff", fontSize: 16 }}>S'inscrire</ThemedText>
-                    </ThemedPressable>
-                    <Separator style={{ height: 30 }} />
-                    <View style={{ position: "relative", width: "100%", flexDirection: "column", justifyContent: "center", alignItems: "center", }}>
-                        <View style={{ position: "relative", width: "100%", height: 1, backgroundColor: theme.coloborder }}></View>
-                        <ThemedText style={{ position: "absolute", backgroundColor: theme.bgSecondary, padding: 10, color: theme.text }}>Ou</ThemedText>
+        <KeyboardAvoidingView
+            style={[styles.container, { backgroundColor: theme.background }]}
+        >
+            <ThemedSafeAreaView style={{ position: "relative", flex: 1, justifyContent: "space-between" }}>
+                <ThemedView style={{ zIndex: 2, position: "absolute", flex: 1, gap: 20, marginHorizontal: "auto", width: "100%", height: "100%", backgroundColor: "transparent", justifyContent: "center", alignItems: "center" }}>
+                    <View style={styles.header}>
+                        <ThemedText style={styles.title}>Rejoignez l'aventure</ThemedText>
+                        <ThemedText style={styles.subtitle}>
+                            Créez votre compte en quelques secondes ✨
+                        </ThemedText>
                     </View>
-                    <Separator style={{ height: 30 }} />
-                     <TouchableOpacity
-                        style={[styles.socialButton, {borderColor: theme.coloborder,borderRadius:6, borderWidth: 1,}]}
-                        onPress={handleGoogleLogin}
-                        activeOpacity={0.8}
-                    >
-                        <GoogleImage width={30} height={30} />
-                        <Text style={[styles.socialButtonText, {color: theme.text}]}>Continuer avec Google</Text>
-                    </TouchableOpacity>
-                    <Separator style={{ height: 20 }} />
-                    <View>
-                        <ThemedText style={{ color: theme.text, fontSize: 14 }}>Vous avez déjà un compte ? <Link style={{ color: Colors.primary, fontSize: 14 }} href="/auth/login">Se connecter</Link></ThemedText>
+
+                    <View style={[styles.form, { backgroundColor: theme.bgSecondary, }]}>
+                        <View style={styles.inputContainer}>
+                            <ThemedText style={[styles.label, { color: theme.text }]}>Email</ThemedText>
+                            <TextInput
+                                style={[styles.input, { 
+                                    backgroundColor: theme.inputBackground || (colorScheme === 'dark' ? '#2a2a2a' : '#f5f5f5'),
+                                    borderColor: theme.inputBorder || (colorScheme === 'dark' ? '#404040' : '#e0e0e0'),
+                                    color: theme.text 
+                                }]}
+                                placeholder="votre@email.com"
+                                placeholderTextColor={theme.placeholder || (colorScheme === 'dark' ? '#888' : '#999')}
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <ThemedText style={[styles.label, { color: theme.text }]}>Numéro de téléphone</ThemedText>
+                            <TextInput
+                                style={[styles.input, { 
+                                    backgroundColor: theme.inputBackground || (colorScheme === 'dark' ? '#2a2a2a' : '#f5f5f5'),
+                                    borderColor: theme.inputBorder || (colorScheme === 'dark' ? '#404040' : '#e0e0e0'),
+                                    color: theme.text 
+                                }]}
+                                placeholder="+261 34 00 000 00"
+                                placeholderTextColor={theme.placeholder || (colorScheme === 'dark' ? '#888' : '#999')}
+                                value={phone}
+                                onChangeText={setPhone}
+                                keyboardType="phone-pad"
+                                autoComplete="tel"
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <ThemedText style={[styles.label, { color: theme.text }]}>Mot de passe</ThemedText>
+                            <TextInput
+                                style={[styles.input, { 
+                                    backgroundColor: theme.inputBackground || (colorScheme === 'dark' ? '#2a2a2a' : '#f5f5f5'),
+                                    borderColor: theme.inputBorder || (colorScheme === 'dark' ? '#404040' : '#e0e0e0'),
+                                    color: theme.text 
+                                }]}
+                                placeholder="••••••••"
+                                placeholderTextColor={theme.placeholder || (colorScheme === 'dark' ? '#888' : '#999')}
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                autoComplete="password-new"
+                            />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.button, loading && styles.buttonDisabled]}
+                            onPress={handleRegister}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <ThemedText style={styles.buttonText}>S'inscrire</ThemedText>
+                            )}
+                        </TouchableOpacity>
+
+                        <View style={styles.linkButton} >
+                            <ThemedText style={{ color: theme.text, fontSize: 14 }}>
+                                Vous avez déjà un compte ? <Link style={{ color: Colors.primary, fontSize: 14 }} href="/auth/login">Se connecter</Link>
+                            </ThemedText>
+                        </View>
+                    </View>
+                    
+                    {/* Features badges */}
+                    <View style={styles.featuresContainer}>
+                        <View style={styles.featureBadge}>
+                            <Ionicons name="shield-checkmark" size={16} color="#4ADE80" />
+                            <ThemedText style={styles.featureText}>100% Sécurisé</ThemedText>
+                        </View>
+                        <View style={styles.featureBadge}>
+                            <Ionicons name="flash" size={16} color="#FBBF24" />
+                            <ThemedText style={styles.featureText}>Inscription rapide</ThemedText>
+                        </View>
                     </View>
                 </ThemedView>
-            </ThemedView>
-            <ThemedView style={{ zIndex: 1, width: "100%", height: "50%", backgroundColor: Colors.primary }}>
-                <Image source={require("@/assets/images/star.png")} style={{ width: "100%", height: "100%" }} />
-            </ThemedView>
-        </ThemedSafeAreaView>
-    )
+                
+                <LinearGradient
+                    colors={colorScheme === 'dark' 
+                        ? ['#1a1a1a', '#2d2d2d', '#1a1a1a'] 
+                        : [Colors.primary, '#4ADE80', '#6366f1']}
+                    start={{ x: -0.5, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ zIndex: 1, width: "100%", height: "100%", }}>
+                    <Animated.View style={[styles.floatingCircle1, { transform: [{ rotate: spin }] }]} />
+                    <Animated.View style={[styles.floatingCircle2, { transform: [{ rotate: spin }] }]} />
+                    <View style={{ position: 'absolute' }}>
+                        {showAlert && (<CustomAlert message={message} title="Vérifiez votre email" />)}
+                        {showAlertError && (<CustomAlert message={message} title="Un erreur est survenu" />)}
+                    </View>
+                </LinearGradient>
+            </ThemedSafeAreaView>
+        </KeyboardAvoidingView>
+    );
 }
 
-export default Regitre
-
 const styles = StyleSheet.create({
-    socialButton: {
-        width: '100%',
-        height: 56,
-        borderRadius: 6,
-        flexDirection: 'row',
+    floatingCircle1: {
+        position: 'absolute',
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        top: -100,
+        right: -50,
+    },
+    floatingCircle2: {
+        position: 'absolute',
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        bottom: 50,
+        left: -50,
+    },
+    container: {
+        flex: 1,
+    },
+     header: {
         alignItems: 'center',
-        justifyContent: 'center',
+    },
+    title: {
+        color: '#fff',
+        fontSize: 36,
+        fontWeight: '800',
+        letterSpacing: -0.5,
+        marginBottom: 8,
+    },
+    subtitle: {
+        color: 'rgba(255,255,255,0.95)',
+        fontSize: 16,
+        fontWeight: '500',
+        textAlign: 'center',
+    },
+    form: {
+        width: "88%", 
+        padding: 20, 
+        paddingVertical: 24, 
+        height: "auto", 
+        borderRadius: 6, 
+        justifyContent: "center", 
+        alignItems: "center",
+    },
+    inputContainer: {
+        marginBottom: 20,
+        width: "100%",
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    input: {
+        borderRadius: 6,
+        padding: 15,
+        fontSize: 16,
+        borderWidth: 1,
+    },
+    button: {
+        backgroundColor: Colors.primary,
+        borderRadius: 6,
+        width: "100%",
+        padding: 16,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    buttonDisabled: {
+        opacity: 0.6,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    linkButton: {
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    linkText: {
+        fontSize: 14,
+    },
+    linkTextBold: {
+        color: Colors.primary,
+        fontWeight: 'bold',
+    },
+    featuresContainer: {
+        flexDirection: 'row',
         gap: 12,
     },
-    socialButtonText: {
-        fontSize: 16,
+    featureBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    featureText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    alertContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 999,
     },
 });
+
+
+// import CustomAlert from '@/common/customAlert';
+// import ThemedSafeAreaView from '@/components/ThemedSafeAreaView';
+// import ThemedText from '@/components/ThemedText';
+// import ThemedView from '@/components/ThemedView';
+// import { Colors } from '@/constant/Colors';
+// import { authService } from '@/services/authService';
+// import { Ionicons } from '@expo/vector-icons';
+// import { NavigationProp } from '@react-navigation/native';
+// import { LinearGradient } from 'expo-linear-gradient';
+// import { Link, useRouter } from 'expo-router';
+// import React, { useEffect, useRef, useState } from 'react';
+// import { Animated, Image } from 'react-native';
+// import {
+//     View,
+//     Text,
+//     TextInput,
+//     TouchableOpacity,
+//     StyleSheet,
+//     ActivityIndicator,
+//     KeyboardAvoidingView,
+//     Platform,
+//     useColorScheme,
+// } from 'react-native';
+
+// export default function RegisterScreen({ navigation }: { navigation: NavigationProp<any, any> }) {
+//     const [email, setEmail] = useState('');
+//     const [phone, setPhone] = useState('');
+//     const [password, setPassword] = useState('');
+//     const [loading, setLoading] = useState(false);
+//     const colorScheme = useColorScheme();
+//     const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
+//     const router = useRouter();
+//     const [message, setMessage] = useState('');
+//     const [showAlert, setShowAlert] = useState(false);
+//     const [showAlertError, setShowAlertError] = useState(false);
+
+//     const handleRegister = async () => {
+//         if (!email || !phone || !password) {
+//             setMessage('Veuillez remplir tous les champs.');
+//             setShowAlertError(true);
+//             setTimeout(() => {
+//                 setShowAlertError(false);
+//             }, 6000);
+//             return;
+//         }
+
+//         if (password.length < 8) {
+//             setMessage('Le mot de passe doit contenir au moins 8 caractères.');
+//             setShowAlertError(true);
+//             setTimeout(() => {
+//                 setShowAlertError(false);
+//             }, 6000);
+//             return;
+//         }
+
+//         setLoading(true);
+//         try {
+//             const result = await authService.register(email, phone, password);
+//             setMessage(result.message);
+//             setShowAlert(true);
+//             router.push({
+//                 pathname: "/auth/verify",
+//                 params: { email },
+//             });
+//         } catch (error: any) {
+//             setMessage(error.toString());
+//             setShowAlertError(true);
+//             setTimeout(() => {
+//                 setShowAlertError(false);
+//             }, 6000);
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//      // Animations
+//     const fadeAnim = useRef(new Animated.Value(0)).current;
+//     const slideAnim = useRef(new Animated.Value(50)).current;
+//     const scaleAnim = useRef(new Animated.Value(0.9)).current;
+//     const rotateAnim = useRef(new Animated.Value(0)).current;
+
+//     useEffect(() => {
+//         // Animation d'entrée
+//         Animated.parallel([
+//             Animated.timing(fadeAnim, {
+//                 toValue: 1,
+//                 duration: 800,
+//                 useNativeDriver: true,
+//             }),
+//             Animated.spring(slideAnim, {
+//                 toValue: 0,
+//                 tension: 50,
+//                 friction: 7,
+//                 useNativeDriver: true,
+//             }),
+//             Animated.spring(scaleAnim, {
+//                 toValue: 1,
+//                 tension: 50,
+//                 friction: 7,
+//                 useNativeDriver: true,
+//             }),
+//         ]).start();
+
+//         // Animation de rotation continue pour l'icône
+//         const rotationAnimation = Animated.loop(
+//             Animated.timing(rotateAnim, {
+//                 toValue: 1,
+//                 duration: 20000,
+//                 useNativeDriver: true,
+//             })
+//         );
+//         rotationAnimation.start();
+
+//         return () => {
+//             rotationAnimation.stop();
+//         };
+//     }, []);
+
+//     const spin = rotateAnim.interpolate({
+//         inputRange: [0, 1],
+//         outputRange: ['0deg', '360deg'],
+//     });
+
+//     return (
+//         <KeyboardAvoidingView
+//             style={styles.container}
+//         >
+//             <ThemedSafeAreaView style={{ position: "relative", flex: 1, justifyContent: "space-between" }}>
+//                 <ThemedView style={{ zIndex: 2, position: "absolute", flex: 1, gap: 20, marginHorizontal: "auto", width: "100%", height: "100%", backgroundColor: "transparent", justifyContent: "center", alignItems: "center" }}>
+//                     <View style={styles.header}>
+//                         <Image source={require("@/assets/images/logo.png")} style={{ width: 60, height: 60, objectFit: "contain", borderRadius: 10 }} />
+//                         <ThemedText style={{ color: "#fff", textAlign: "center", fontSize: 30, }}>Inscription</ThemedText>
+//                     </View>
+
+//                     <View style={[styles.form, { backgroundColor: theme.bgSecondary, }]}>
+//                         <View style={styles.inputContainer}>
+//                             <ThemedText style={styles.label}>Email</ThemedText>
+//                             <TextInput
+//                                 style={styles.input}
+//                                 placeholder="votre@email.com"
+//                                 value={email}
+//                                 onChangeText={setEmail}
+//                                 keyboardType="email-address"
+//                                 autoCapitalize="none"
+//                                 autoComplete="email"
+//                             />
+//                         </View>
+
+//                         <View style={styles.inputContainer}>
+//                             <ThemedText style={styles.label}>Numéro de téléphone</ThemedText>
+//                             <TextInput
+//                                 style={styles.input}
+//                                 placeholder="+261 34 00 000 00"
+//                                 value={phone}
+//                                 onChangeText={setPhone}
+//                                 keyboardType="phone-pad"
+//                                 autoComplete="tel"
+//                             />
+//                         </View>
+
+//                         <View style={styles.inputContainer}>
+//                             <ThemedText style={styles.label}>Mot de passe</ThemedText>
+//                             <TextInput
+//                                 style={styles.input}
+//                                 placeholder="••••••••"
+//                                 value={password}
+//                                 onChangeText={setPassword}
+//                                 secureTextEntry
+//                                 autoComplete="password-new"
+//                             />
+//                         </View>
+
+//                         <TouchableOpacity
+//                             style={[styles.button, loading && styles.buttonDisabled]}
+//                             onPress={handleRegister}
+//                             disabled={loading}
+//                         >
+//                             {loading ? (
+//                                 <ActivityIndicator color="#fff" />
+//                             ) : (
+//                                 <ThemedText style={styles.buttonText}>S'inscrire</ThemedText>
+//                             )}
+//                         </TouchableOpacity>
+
+//                         <View style={styles.linkButton} >
+//                             <ThemedText style={{ color: theme.text, fontSize: 14 }}>Vous avez déjà un compte ? <Link style={{ color: Colors.primary, fontSize: 14 }} href="/auth/login">Se connecter</Link></ThemedText>
+//                         </View>
+//                     </View>
+//                     {/* Features badges */}
+//                     <View style={styles.featuresContainer}>
+//                         <View style={styles.featureBadge}>
+//                             <Ionicons name="shield-checkmark" size={16} color="#4ADE80" />
+//                             <ThemedText style={styles.featureText}>100% Sécurisé</ThemedText>
+//                         </View>
+//                         <View style={styles.featureBadge}>
+//                             <Ionicons name="flash" size={16} color="#FBBF24" />
+//                             <ThemedText style={styles.featureText}>Inscription rapide</ThemedText>
+//                         </View>
+//                     </View>
+//                 </ThemedView>
+//                 <LinearGradient
+//                     colors={[Colors.primary, '#4ADE80', '#6366f1']}
+//                     start={{ x: -0.5, y: 0 }}
+//                     end={{ x: 1, y: 1 }}
+//                     style={{ zIndex: 1, width: "100%", height: "100%", }}>
+//                     {/* <Image source={require("@/assets/images/star.png")} style={{ width: "100%", height: "100%", }} /> */}
+//                     <Animated.View style={[styles.floatingCircle1, { transform: [{ rotate: spin }] }]} />
+//                     <Animated.View style={[styles.floatingCircle2, { transform: [{ rotate: spin }] }]} />
+//                     <View style={{ position: 'absolute' }}>
+//                         {showAlert && (<CustomAlert message={message} title="Vérifiez votre email" />)}
+//                         {showAlertError && (<CustomAlert message={message} title="Un erreur est survenu" />)}
+//                     </View>
+//                 </LinearGradient>
+//             </ThemedSafeAreaView>
+//         </KeyboardAvoidingView>
+//     );
+// }
+
+// const styles = StyleSheet.create({
+//     floatingCircle1: {
+//         position: 'absolute',
+//         width: 300,
+//         height: 300,
+//         borderRadius: 150,
+//         backgroundColor: 'rgba(255,255,255,0.1)',
+//         top: -100,
+//         right: -50,
+//     },
+//     floatingCircle2: {
+//         position: 'absolute',
+//         width: 200,
+//         height: 200,
+//         borderRadius: 100,
+//         backgroundColor: 'rgba(255,255,255,0.08)',
+//         bottom: 50,
+//         left: -50,
+//     },
+//     container: {
+//         flex: 1,
+//         backgroundColor: '#fff',
+//     },
+//     header: {
+//         marginBottom: 40,
+//         flexDirection: 'column',
+//         gap: 10,
+//         alignItems: 'center',
+//     },
+//     title: {
+//         fontSize: 32,
+//         fontWeight: 'bold',
+//         color: '#333',
+//         marginBottom: 8,
+//     },
+//     subtitle: {
+//         fontSize: 16,
+//         color: '#666',
+//     },
+//     form: {
+//         width: "88%", padding: 20, paddingVertical: 24, height: "auto", borderRadius: 6, justifyContent: "center", alignItems: "center",
+//     },
+//     inputContainer: {
+//         marginBottom: 20,
+//         width: "100%",
+//     },
+//     label: {
+//         fontSize: 14,
+//         fontWeight: '600',
+//         color: '#333',
+//         marginBottom: 8,
+//     },
+//     input: {
+//         backgroundColor: '#f5f5f5',
+//         borderRadius: 6,
+//         padding: 15,
+//         fontSize: 16,
+//         borderWidth: 1,
+//         borderColor: '#e0e0e0',
+//     },
+//     button: {
+//         backgroundColor: Colors.primary,
+//         borderRadius: 6,
+//         width: "100%",
+//         padding: 16,
+//         alignItems: 'center',
+//         marginTop: 10,
+//     },
+//     buttonDisabled: {
+//         opacity: 0.6,
+//     },
+//     buttonText: {
+//         color: '#fff',
+//         fontSize: 16,
+//         fontWeight: 'bold',
+//     },
+//     linkButton: {
+//         marginTop: 20,
+//         alignItems: 'center',
+//     },
+//     linkText: {
+//         color: '#666',
+//         fontSize: 14,
+//     },
+//     linkTextBold: {
+//         color: Colors.primary,
+//         fontWeight: 'bold',
+//     },
+//     featuresContainer: {
+//         flexDirection: 'row',
+//         gap: 12,
+//         marginTop: 20,
+//     },
+//     featureBadge: {
+//         flexDirection: 'row',
+//         alignItems: 'center',
+//         gap: 6,
+//         backgroundColor: 'rgba(255,255,255,0.2)',
+//         paddingHorizontal: 14,
+//         paddingVertical: 8,
+//         borderRadius: 20,
+//         borderWidth: 1,
+//         borderColor: 'rgba(255,255,255,0.3)',
+//     },
+//     featureText: {
+//         color: '#fff',
+//         fontSize: 12,
+//         fontWeight: '600',
+//     },
+//     alertContainer: {
+//         position: 'absolute',
+//         top: 0,
+//         left: 0,
+//         right: 0,
+//         zIndex: 999,
+//     },
+// });

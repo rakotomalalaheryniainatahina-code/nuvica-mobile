@@ -2,6 +2,24 @@ import { Colors } from "@/constant/Colors";
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
+     floatingCircle1: {
+        position: 'absolute',
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        top: -100,
+        right: -50,
+    },
+    floatingCircle2: {
+        position: 'absolute',
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        bottom: 50,
+        left: -50,
+    },
     container: {
         flex: 1,
     },

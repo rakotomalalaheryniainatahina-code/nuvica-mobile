@@ -5,7 +5,6 @@ import {
     TouchableOpacity,
     StatusBar,
 } from 'react-native';
-import GoogleImage from "@/assets/icons/google.svg";
 import { useRouter } from 'expo-router';
 import styles from '@/styles/commencer';
 
@@ -15,10 +14,6 @@ const GetStartedScreen = () => {
     const router = useRouter();
     const handleEmailLogin = () => {
         router.push('/auth/login');
-    };
-
-    const handleGoogleLogin = () => {
-        console.log('Continue with Google');
     };
 
     const handleSignUp = () => {
@@ -99,15 +94,6 @@ const GetStartedScreen = () => {
                         </View>
                     </TouchableOpacity>
 
-                    {/* Google Button */}
-                    <TouchableOpacity
-                        style={styles.socialButton}
-                        onPress={handleGoogleLogin}
-                        activeOpacity={0.8}
-                    >
-                        <GoogleImage width={30} height={30} />
-                        <Text style={styles.socialButtonText}>Continuer avec Google</Text>
-                    </TouchableOpacity>
                 </View>
 
                 {/* Sign Up Link */}

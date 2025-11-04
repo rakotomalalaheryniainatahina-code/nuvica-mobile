@@ -1,39 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     View,
     Linking,
     ScrollView,
-    StyleSheet,
     useColorScheme,
     TouchableOpacity,
     Image,
     Switch,
     Alert,
-    ImageBackground,
     TextInput,
 } from "react-native";
 import { Colors } from "@/constant/Colors";
-import { Theme } from "@/types/ColorType";
 import { Ionicons } from "@expo/vector-icons";
-import Images from "@/constant/Images";
-import ThemedView from "@/components/ThemedView";
 import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
 import { Modal } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import ThemedText from "@/components/ThemedText";
 import { LinearGradient } from "expo-linear-gradient";
 import styles from "@/styles/profile";
+import { Animated } from "react-native";
+import { useRouter } from "expo-router";
 
 type ProfileData = {
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
-    address: string;
-    city: string;
-    country: string;
-    occupation: string;
-    dateOfBirth: string;
     avatar: string;
 };
 
@@ -43,12 +35,10 @@ interface ProfileInfoModalProps {
 
 export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
     const colorScheme = useColorScheme();
-    const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const isLight = theme === Colors.light;
 
     // States pour les modals
-    const [showProfileModal, setShowProfileModal] = useState(false);
-    const [showSecurityModal, setShowSecurityModal] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [showBackupModal, setShowBackupModal] = useState(false);
     const [showReportsModal, setShowReportsModal] = useState(false);
@@ -60,9 +50,7 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
 
     const [notifications, setNotifications] = useState(true);
     const [darkMode, setDarkMode] = useState(!isLight);
-    const [password, setPassword] = useState("qr]Dkùm#");
-    const [showPassword, setShowPassword] = useState(false);
-
+    const router = useRouter();
     const vola = 5000;
     const userStats = {
         totalTransactions: 245,
@@ -77,69 +65,10 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
             lastName: "Tahina",
             email: "tahina615@gmail.com",
             phone: "+261 34 12 345 67",
-            address: "Lot II A 123 Antananarivo",
-            city: "Antananarivo",
-            country: "Madagascar",
-            occupation: "Développeur",
-            dateOfBirth: "15/03/1990",
             avatar: "https://ui-avatars.com/api/?name=Rakotomalala+Tahina&size=200&background=6366F1&color=fff&bold=true",
         }
     );
 
-    const updateField = (field: keyof ProfileData, value: string) => {
-        setFormData({ ...formData, [field]: value });
-    };
-
-    const generatePassword = () => {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
-        let newPass = "";
-        for (let i = 0; i < 15; i++) {
-            newPass += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        setPassword(newPass);
-    };
-
-    const pickImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets[0]) {
-            updateField("avatar", result.assets[0].uri);
-        }
-    };
-
-    const takePhoto = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-            Alert.alert("Permission refusée", "Nous avons besoin de la permission d'accès à la caméra.");
-            return;
-        }
-        const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-        });
-        if (!result.canceled && result.assets[0]) {
-            updateField("avatar", result.assets[0].uri);
-        }
-    };
-
-    const showImageOptions = () => {
-        Alert.alert(
-            "Photo de profil",
-            "Choisissez une option",
-            [
-                { text: "Prendre une photo", onPress: takePhoto },
-                { text: "Choisir depuis la galerie", onPress: pickImage },
-                { text: "Annuler", style: "cancel" },
-            ],
-            { cancelable: true }
-        );
-    };
 
     const handleLogout = () => {
         Alert.alert(
@@ -155,6 +84,55 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
             ]
         );
     };
+
+    // Animations
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Animation d'entrée
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(slideAnim, {
+                toValue: 0,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        // Animation de rotation continue pour l'icône
+        const rotationAnimation = Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 20000,
+                useNativeDriver: true,
+            })
+        );
+        rotationAnimation.start();
+
+        return () => {
+            rotationAnimation.stop();
+        };
+    }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
 
     const MenuItem = ({
         icon,
@@ -263,52 +241,56 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
 
 
     return (
-        <ThemedSafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <ThemedSafeAreaView style={[styles.container, {  backgroundColor: isLight ? "#F5F5F7" : theme.background }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header Moderne avec Gradient */}
-                <LinearGradient
-                    colors={[Colors.primary, '#4ADE80', '#6366f1']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }} style={styles.header}>
-                    <ImageBackground
-                        source={Images.starBG}
-                        style={styles.headerBackground}
-                    >
-                        <View style={styles.profileSection}>
-                            <View style={styles.avatarWrapper}>
-                                <Image source={{ uri: formData.avatar }} style={styles.avatar} />
-                                <View style={styles.onlineBadge} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <ThemedText style={styles.userName}>{formData.firstName}</ThemedText>
-                                <ThemedText style={styles.userEmail}>{formData.email}</ThemedText>
-                                <View style={styles.balanceContainer}>
-                                    <Ionicons name="wallet" size={20} color="#FFD700" />
-                                    <ThemedText style={styles.balanceText}>{vola.toLocaleString()} Ar</ThemedText>
-                                </View>
+                <View
+                    style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 295, overflow: 'hidden', }}
+                >
+                    <LinearGradient
+                        colors={colorScheme === 'dark'
+                            ? ['#1a1a1a', '#2d2d2d', '#1a1a1a']
+                            : [Colors.primary, '#4ADE80', '#6366f1']}
+                        start={{ x: -0.5, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ zIndex: 0, width: "100%", height: "100%", position: 'absolute' }}>
+                        <Animated.View style={[styles.floatingCircle1, { transform: [{ rotate: spin }] }]} />
+                        <Animated.View style={[styles.floatingCircle2, { transform: [{ rotate: spin }] }]} />
+                    </LinearGradient>
+                    <View style={[styles.profileSection, { justifyContent: "space-between", paddingVertical: 24, paddingHorizontal: 20, }]}>
+                        <View style={styles.avatarWrapper}>
+                            <Image source={{ uri: formData.avatar }} style={styles.avatar} />
+                            <View style={styles.onlineBadge} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <ThemedText style={styles.userName}>{formData.firstName}</ThemedText>
+                            <ThemedText style={styles.userEmail}>{formData.email}</ThemedText>
+                            <View style={styles.balanceContainer}>
+                                <Ionicons name="wallet" size={20} color="#FFD700" />
+                                <ThemedText style={styles.balanceText}>{vola.toLocaleString()} Ar</ThemedText>
                             </View>
                         </View>
+                    </View>
 
-                        {/* Stats Cards */}
-                        <View style={styles.statsContainer}>
-                            <View style={styles.statCard}>
-                                <Ionicons name="swap-horizontal" size={24} color={"#1D61E7"} />
-                                <ThemedText style={styles.statValue}>{userStats.totalTransactions}</ThemedText>
-                                <ThemedText style={styles.statLabel}>Transactions</ThemedText>
-                            </View>
-                            <View style={styles.statCard}>
-                                <Ionicons name="wallet-outline" size={24} color={Colors.orange} />
-                                <ThemedText style={styles.statValue}>{userStats.activeBudgets}</ThemedText>
-                                <ThemedText style={styles.statLabel}>Budgets</ThemedText>
-                            </View>
-                            <View style={styles.statCard}>
-                                <Ionicons name="trending-up" size={24} color="#FFD700" />
-                                <ThemedText style={styles.statValue}>{userStats.savingsGoal}%</ThemedText>
-                                <ThemedText style={styles.statLabel}>Épargne</ThemedText>
-                            </View>
+                    {/* Stats Cards */}
+                    <View style={[styles.statsContainer, { justifyContent: "space-between", paddingVertical: 24, paddingHorizontal: 20, }]}>
+                        <View style={styles.statCard}>
+                            <Ionicons name="swap-horizontal" size={24} color={"#1D61E7"} />
+                            <ThemedText style={styles.statValue}>{userStats.totalTransactions}</ThemedText>
+                            <ThemedText style={styles.statLabel}>Transactions</ThemedText>
                         </View>
-                    </ImageBackground>
-                </LinearGradient>
+                        <View style={styles.statCard}>
+                            <Ionicons name="wallet-outline" size={24} color={Colors.orange} />
+                            <ThemedText style={styles.statValue}>{userStats.activeBudgets}</ThemedText>
+                            <ThemedText style={styles.statLabel}>Budgets</ThemedText>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Ionicons name="trending-up" size={24} color="#FFD700" />
+                            <ThemedText style={styles.statValue}>{userStats.savingsGoal}%</ThemedText>
+                            <ThemedText style={styles.statLabel}>Épargne</ThemedText>
+                        </View>
+                    </View>
+                </View>
 
                 {/* Menu Content */}
                 <View style={styles.content}>
@@ -322,13 +304,14 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
                             icon="person-outline"
                             title="Informations personnelles"
                             subtitle="Gérer votre profil"
-                            onPress={() => setShowProfileModal(true)}
+                            onPress={() => router.push("/screen/information")}
+
                         />
                         <MenuItem
                             icon="lock-closed-outline"
                             title="Sécurité"
                             subtitle="Mot de passe et authentification"
-                            onPress={() => setShowSecurityModal(true)}
+                            onPress={() => router.push("/screen/security")}
                         />
                     </View>
 
@@ -456,146 +439,6 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
                     <View style={{ height: 100 }} />
                 </View>
             </ScrollView>
-
-            {/* Modal Profil */}
-            <GenericModal
-                visible={showProfileModal}
-                onClose={() => setShowProfileModal(false)}
-                title="Informations personnelles"
-            >
-                <View style={styles.avatarSection}>
-                    <View style={styles.avatarContainers}>
-                        <Image source={{ uri: formData.avatar }} style={styles.avatars} />
-                        <TouchableOpacity style={styles.avatarEditButton} onPress={showImageOptions}>
-                            <Ionicons name="camera" size={22} color="#FFF" />
-                        </TouchableOpacity>
-                    </View>
-                    <ThemedText style={[styles.avatarHint, { color: theme.text }]}>
-                        Appuyez pour changer la photo
-                    </ThemedText>
-                </View>
-
-                <View style={styles.formGroup}>
-                    <ThemedText style={[styles.label, { color: theme.text }]}>Nom</ThemedText>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A", color: theme.text }]}
-                        value={formData.firstName}
-                        onChangeText={(text) => updateField("firstName", text)}
-                        placeholder="Votre nom"
-                        placeholderTextColor={theme.text + "80"}
-                    />
-                </View>
-
-                <View style={styles.formGroup}>
-                    <ThemedText style={[styles.label, { color: theme.text }]}>Email</ThemedText>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A", color: theme.text }]}
-                        value={formData.email}
-                        onChangeText={(text) => updateField("email", text)}
-                        placeholder="votre@email.com"
-                        placeholderTextColor={theme.text + "80"}
-                        keyboardType="email-address"
-                    />
-                </View>
-
-                <View style={styles.formGroup}>
-                    <ThemedText style={[styles.label, { color: theme.text }]}>Téléphone</ThemedText>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A", color: theme.text }]}
-                        value={formData.phone}
-                        onChangeText={(text) => updateField("phone", text)}
-                        placeholder="+261 XX XX XXX XX"
-                        placeholderTextColor={theme.text + "80"}
-                        keyboardType="phone-pad"
-                    />
-                </View>
-
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={[styles.saveButton, { backgroundColor: Colors.primary }]}
-                        onPress={() => {
-                            Alert.alert("Succès", "Profil mis à jour!");
-                            setShowProfileModal(false);
-                        }}
-                    >
-                        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                        <ThemedText style={styles.saveButtonText}>Enregistrer</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.cancelButton, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A" }]}
-                        onPress={() => setShowProfileModal(false)}
-                    >
-                        <ThemedText style={[styles.cancelButtonText, { color: theme.text }]}>Annuler</ThemedText>
-                    </TouchableOpacity>
-                </View>
-            </GenericModal>
-
-            {/* Modal Sécurité */}
-            <GenericModal
-                visible={showSecurityModal}
-                onClose={() => setShowSecurityModal(false)}
-                title="Sécurité"
-            >
-                <View style={styles.formGroup}>
-                    <ThemedText style={[styles.label, { color: theme.text }]}>Email</ThemedText>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A", color: theme.text }]}
-                        value={formData.email}
-                        editable={false}
-                        placeholderTextColor={theme.text + "80"}
-                    />
-                </View>
-
-                <View style={styles.divider} />
-
-                <ThemedText style={[styles.sectionSubtitle, { color: theme.text }]}>Changer le mot de passe</ThemedText>
-
-                <View style={styles.formGroup}>
-                    <ThemedText style={[styles.label, { color: theme.text }]}>Nouveau mot de passe</ThemedText>
-                    <View style={[styles.passwordContainer, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A" }]}>
-                        <TextInput
-                            style={[styles.passwordInput, { color: theme.text }]}
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
-                            placeholder="••••••••"
-                            placeholderTextColor={theme.text + "80"}
-                        />
-                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                            <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color={theme.text} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <TouchableOpacity
-                    style={[styles.generateButton, { backgroundColor: Colors.primary + "20" }]}
-                    onPress={generatePassword}
-                >
-                    <Ionicons name="refresh" size={20} color={Colors.primary} />
-                    <ThemedText style={[styles.generateButtonText, { color: Colors.primary }]}>
-                        Générer un mot de passe
-                    </ThemedText>
-                </TouchableOpacity>
-
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={[styles.saveButton, { backgroundColor: Colors.primary }]}
-                        onPress={() => {
-                            Alert.alert("Succès", "Mot de passe mis à jour!");
-                            setShowSecurityModal(false);
-                        }}
-                    >
-                        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                        <ThemedText style={styles.saveButtonText}>Enregistrer</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.cancelButton, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A" }]}
-                        onPress={() => setShowSecurityModal(false)}
-                    >
-                        <ThemedText style={[styles.cancelButtonText, { color: theme.text }]}>Annuler</ThemedText>
-                    </TouchableOpacity>
-                </View>
-            </GenericModal>
 
             {/* Modal Export */}
             <GenericModal
@@ -730,10 +573,10 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
 
                 <View style={styles.faqItem}>
                     <ThemedText style={[styles.faqQuestion, { color: theme.text }]}>
-                        Comment créer un budget?
+                        Comment créer un objectif?
                     </ThemedText>
                     <ThemedText style={[styles.faqAnswer, { color: theme.text }]}>
-                        Allez dans l'onglet "Budgets" et appuyez sur "Nouveau budget". Définissez un montant et une catégorie.
+                        Allez dans l'onglet "Épargne" et appuyez sur le bouton "+". Définissez l'objectif avec un nom, un montant et une catégorie.
                     </ThemedText>
                 </View>
 

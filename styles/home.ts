@@ -2,16 +2,28 @@ import { Colors } from "@/constant/Colors";
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
-    header: {
-        height: 295,
-        overflow: "hidden",
+    floatingCircle1: {
+        position: 'absolute',
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        top: -100,
+        right: -50,
     },
-    headerBackground: {
-        width: "100%",
-        height: "100%",
+    floatingCircle2: {
+        position: 'absolute',
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        bottom: 50,
+        left: -50,
     },
     headerContent: {
+        position: "relative",
         flex: 1,
+        zIndex: 1,
         paddingTop: 24,
         paddingHorizontal: 20,
         paddingBottom: 20,

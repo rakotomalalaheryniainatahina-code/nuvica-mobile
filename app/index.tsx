@@ -21,7 +21,8 @@ export default function Index() {
       <Link style={{ color: "blue" , fontSize: 20 }} href="/dashboard/wallet">Home</Link>
       <Separator/>
       <Link style={{ color: "blue" , fontSize: 20 }} href="/onboarding/onboarding">Onboarding</Link>
-
+      <Separator/>
+      <Link style={{ color: "blue" , fontSize: 20 }} href="/auth/verify">verify</Link>
     </View>
   );
 }

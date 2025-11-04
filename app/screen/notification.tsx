@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
     Text,
@@ -10,6 +10,7 @@ import {
     Alert,
     Modal,
     TextInput,
+    Image,
 } from "react-native";
 import { Colors } from "@/constant/Colors";
 import { Theme } from "@/types/ColorType";
@@ -17,11 +18,10 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
 import ThemedView from "@/components/ThemedView";
-import { ImageBackground } from "react-native";
-import Image from "@/constant/Images";
 import ThemedScrollView from "@/components/ThemedScrollView";
 import { LinearGradient } from "expo-linear-gradient";
 import styles from "@/styles/notification";
+import { Animated } from "react-native";
 
 // Types
 interface Notification {
@@ -151,13 +151,36 @@ const formatTimeAgo = (date: Date) => {
     return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 };
 
+// // Composant pour les lignes de paramètres
+// const SettingRow = ({ icon, iconColor, title, subtitle, value, onValueChange, theme, isLast = false }: any) => (
+//     <>
+//         <View style={styles.settingRowContainer}>
+//             <View style={styles.settingLeft}>
+//                 <View style={[styles.settingIconContainer, { backgroundColor: iconColor + "20" }]}>
+//                     <Ionicons name={icon as any} size={22} color={iconColor} />
+//                 </View>
+//                 <View style={{ flex: 1 }}>
+//                     <Text style={[styles.settingTitle, { color: theme.text }]}>
+//                         {title}
+//                     </Text>
+//                     <Text style={[styles.settingSubtitle, { color: theme.text }]}>
+//                         {subtitle}
+//                     </Text>
+//                 </View>
+//             </View>
+//             <Switch
+//                 value={value}
+//                 onValueChange={onValueChange}
+//                 trackColor={{ false: "#767577", true: Colors.primary }}
+//                 thumbColor="#FFF"
+//                 ios_backgroundColor="#767577"
+//             />
+//         </View>
+//         {!isLast && <View style={[styles.divider, { backgroundColor: theme.text + "15" }]} />}
+//     </>
+// );
+
 export default function NotificationsPage() {
-    const colorScheme = useColorScheme();
-    const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
-    const isLight = theme === Colors.light;
-    const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFICATIONS);
-    const [showSettings, setShowSettings] = useState(false);
-    const [filterType, setFilterType] = useState<string | null>(null);
     const [settings, setSettings] = useState<NotificationSettings>({
         budgetAlerts: true,
         billReminders: true,
@@ -170,9 +193,13 @@ export default function NotificationsPage() {
         billReminderDays: 3,
         budgetThreshold: 90,
     });
+    const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFICATIONS);
+    const [filterType, setFilterType] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [currentSetting, setCurrentSetting] = useState<{ key: keyof NotificationSettings; value: any } | null>(null);
-
+    const colorScheme = useColorScheme();
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
+    const isLight = theme === Colors.light;
     useEffect(() => {
         loadSettings();
     }, []);
@@ -467,405 +494,205 @@ export default function NotificationsPage() {
         { type: "insight", label: "Conseils", icon: "bulb", color: "#22D3EE" },
     ];
 
-    if (showSettings) {
-        return (
-            <ThemedSafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-                <View style={[styles.settingsHeader, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
-                    <TouchableOpacity
-                        onPress={() => setShowSettings(false)}
-                        style={styles.backButton}
-                    >
-                        <Ionicons name="chevron-back" size={18} color={Colors.primary} />
-                    </TouchableOpacity>
-                    <Text style={[styles.settingsTitle, { color: theme.text }]}>Paramètres</Text>
-                    <View style={{ width: 40 }} />
-                </View>
 
-                <ScrollView
-                    style={styles.content}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40 }}
-                >
-                    {/* Types de notifications */}
-                    <View style={styles.settingsSection}>
-                        <View style={styles.sectionHeaderSettings}>
-                            <Ionicons name="notifications" size={22} color={Colors.primary} />
-                            <Text style={[styles.sectionTitleSettings, { color: theme.text }]}>
-                                Types de notifications
-                            </Text>
-                        </View>
-                        <View style={[styles.settingCard, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
-                            <SettingRow
-                                icon="alert-circle"
-                                iconColor="#FF6B6B"
-                                title="Alertes budget"
-                                subtitle="Budget dépassé ou proche"
-                                value={settings.budgetAlerts}
-                                onValueChange={(v: boolean) => updateSetting("budgetAlerts", v)}
-                                theme={theme}
-                            />
-                            <SettingRow
-                                icon="calendar"
-                                iconColor="#F59E0B"
-                                title="Rappels factures"
-                                subtitle="Factures à payer"
-                                value={settings.billReminders}
-                                onValueChange={(v: boolean) => updateSetting("billReminders", v)}
-                                theme={theme}
-                            />
-                            <SettingRow
-                                icon="trophy"
-                                iconColor="#4ADE80"
-                                title="Objectifs d'épargne"
-                                subtitle="Progression et succès"
-                                value={settings.goalUpdates}
-                                onValueChange={(v: boolean) => updateSetting("goalUpdates", v)}
-                                theme={theme}
-                            />
-                            <SettingRow
-                                icon="receipt"
-                                iconColor="#6366F1"
-                                title="Transactions"
-                                subtitle="Nouvelles transactions"
-                                value={settings.transactionAlerts}
-                                onValueChange={(v: boolean) => updateSetting("transactionAlerts", v)}
-                                theme={theme}
-                                isLast
-                            />
-                        </View>
-                    </View>
+    // Animations
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
 
-                    {/* Rapports */}
-                    <View style={styles.settingsSection}>
-                        <View style={styles.sectionHeaderSettings}>
-                            <Ionicons name="document-text" size={22} color={Colors.primary} />
-                            <Text style={[styles.sectionTitleSettings, { color: theme.text }]}>
-                                Rapports périodiques
-                            </Text>
-                        </View>
-                        <View style={[styles.settingCard, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
-                            <SettingRow
-                                icon="calendar-outline"
-                                iconColor="#22D3EE"
-                                title="Rapport hebdomadaire"
-                                subtitle="Tous les lundis"
-                                value={settings.weeklyReports}
-                                onValueChange={(v: boolean) => updateSetting("weeklyReports", v)}
-                                theme={theme}
-                            />
-                            <SettingRow
-                                icon="calendar"
-                                iconColor="#A78BFA"
-                                title="Rapport mensuel"
-                                subtitle="Le 1er de chaque mois"
-                                value={settings.monthlyReports}
-                                onValueChange={(v: boolean) => updateSetting("monthlyReports", v)}
-                                theme={theme}
-                                isLast
-                            />
-                        </View>
-                    </View>
+    useEffect(() => {
+        // Animation d'entrée
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(slideAnim, {
+                toValue: 0,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+        ]).start();
 
-                    {/* Canaux */}
-                    <View style={styles.settingsSection}>
-                        <View style={styles.sectionHeaderSettings}>
-                            <Ionicons name="send" size={22} color={Colors.primary} />
-                            <Text style={[styles.sectionTitleSettings, { color: theme.text }]}>
-                                Canaux de notification
-                            </Text>
-                        </View>
-                        <View style={[styles.settingCard, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
-                            <SettingRow
-                                icon="phone-portrait"
-                                iconColor={Colors.primary}
-                                title="Notifications push"
-                                subtitle="Sur votre appareil"
-                                value={settings.pushNotifications}
-                                onValueChange={(v: boolean) => updateSetting("pushNotifications", v)}
-                                theme={theme}
-                            />
-                            <SettingRow
-                                icon="mail"
-                                iconColor={Colors.primary}
-                                title="Notifications email"
-                                subtitle="Par email"
-                                value={settings.emailNotifications}
-                                onValueChange={(v: boolean) => updateSetting("emailNotifications", v)}
-                                theme={theme}
-                                isLast
-                            />
-                        </View>
-                    </View>
-
-                    {/* Préférences */}
-                    <View style={styles.settingsSection}>
-                        <View style={styles.sectionHeaderSettings}>
-                            <Ionicons name="options" size={22} color={Colors.primary} />
-                            <Text style={[styles.sectionTitleSettings, { color: theme.text }]}>
-                                Préférences avancées
-                            </Text>
-                        </View>
-                        <View style={[styles.settingCard, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
-                            <TouchableOpacity
-                                style={styles.settingRowClickable}
-                                onPress={() => openModal('billReminderDays')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.settingLeft}>
-                                    <View style={[styles.settingIconContainer, { backgroundColor: Colors.primary + "20" }]}>
-                                        <Ionicons name="time" size={22} color={Colors.primary} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Rappel factures
-                                        </Text>
-                                        <Text style={[styles.settingSubtitle, { color: theme.text }]}>
-                                            {settings.billReminderDays} jours avant l'échéance
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Ionicons name="chevron-forward" size={20} color={theme.text} style={{ opacity: 0.4 }} />
-                            </TouchableOpacity>
-
-                            <View style={[styles.divider, { backgroundColor: theme.text + "15" }]} />
-
-                            <TouchableOpacity
-                                style={styles.settingRowClickable}
-                                onPress={() => openModal('budgetThreshold')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.settingLeft}>
-                                    <View style={[styles.settingIconContainer, { backgroundColor: Colors.primary + "20" }]}>
-                                        <Ionicons name="speedometer" size={22} color={Colors.primary} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={[styles.settingTitle, { color: theme.text }]}>
-                                            Seuil d'alerte budget
-                                        </Text>
-                                        <Text style={[styles.settingSubtitle, { color: theme.text }]}>
-                                            Alerter à {settings.budgetThreshold}%
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Ionicons name="chevron-forward" size={20} color={theme.text} style={{ opacity: 0.4 }} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </ScrollView>
-
-                {/* Modal pour modifier les préférences */}
-                <Modal
-                    visible={modalVisible}
-                    transparent={true}
-                    animationType="fade"
-                    onRequestClose={() => setModalVisible(false)}
-                >
-                    <View style={styles.modalContainer}>
-                        <View style={[styles.modalContent, { backgroundColor: isLight ? "#FFF" : "#1F1F1F" }]}>
-                            <View style={styles.modalHandle} />
-                            <Text style={[styles.modalTitle, { color: theme.text }]}>
-                                {currentSetting?.key === 'billReminderDays'
-                                    ? 'Rappel des factures'
-                                    : 'Seuil d\'alerte budget'}
-                            </Text>
-                            <Text style={[styles.modalDescription, { color: theme.text }]}>
-                                {currentSetting?.key === 'billReminderDays'
-                                    ? 'Nombre de jours avant l\'échéance'
-                                    : 'Pourcentage du budget à atteindre'}
-                            </Text>
-                            <View style={styles.inputContainer}>
-                                <TextInput
-                                    style={[styles.modalInput, {
-                                        color: theme.text,
-                                        backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A"
-                                    }]}
-                                    keyboardType="numeric"
-                                    value={currentSetting?.value.toString()}
-                                    onChangeText={(text) => {
-                                        const num = parseInt(text, 10) || 0;
-                                        if (currentSetting) {
-                                            setCurrentSetting({ ...currentSetting, value: num });
-                                        }
-                                    }}
-                                    placeholder={currentSetting?.key === 'billReminderDays' ? "3" : "90"}
-                                    placeholderTextColor={theme.text + "60"}
-                                />
-                                <Text style={[styles.inputSuffix, { color: theme.text }]}>
-                                    {currentSetting?.key === 'billReminderDays' ? 'jours' : '%'}
-                                </Text>
-                            </View>
-                            <View style={styles.modalButtons}>
-                                <TouchableOpacity
-                                    style={[styles.modalButton, { backgroundColor: isLight ? "#F5F5F5" : "#2A2A2A" }]}
-                                    onPress={() => setModalVisible(false)}
-                                >
-                                    <Text style={[styles.modalButtonTextSecondary, { color: theme.text }]}>
-                                        Annuler
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.modalButton, styles.modalButtonPrimary]}
-                                    onPress={() => handleSaveModal(currentSetting?.value)}
-                                >
-                                    <Text style={styles.modalButtonTextPrimary}>Enregistrer</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
-            </ThemedSafeAreaView>
+        // Animation de rotation continue pour l'icône
+        const rotationAnimation = Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 20000,
+                useNativeDriver: true,
+            })
         );
-    }
+        rotationAnimation.start();
+
+        return () => {
+            rotationAnimation.stop();
+        };
+    }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
 
     return (
-        <ThemedSafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-            <ThemedScrollView showsVerticalScrollIndicator={false}>
+        <ThemedSafeAreaView style={[styles.container, {  backgroundColor: isLight ? "#F5F5F7" : theme.background }]}>
+            <ThemedScrollView style={{ backgroundColor: isLight ? "#F5F5F7" : theme.background}} showsVerticalScrollIndicator={false}>
                 {/* Header Moderne */}
-                <LinearGradient
-                    colors={[Colors.primary, '#4ADE80', '#6366f1']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }} style={styles.headerContainer}>
-                    <ImageBackground
-                        source={Image.starBG}
-                        style={styles.headerBackground}
-                    >
-                        <View style={styles.headerTop}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.headerTitle}>Notifications</Text>
-                                <View style={styles.headerStats}>
-                                    <View style={styles.statBadge}>
-                                        <Text style={styles.statNumber}>{unreadCount}</Text>
-                                        <Text style={styles.statLabel}>non lues</Text>
-                                    </View>
-                                    {highPriorityCount > 0 && (
-                                        <View style={[styles.statBadge, styles.urgentBadge]}>
-                                            <Ionicons name="flame" size={14} color="#FF6B6B" />
-                                            <Text style={[styles.statNumber, { color: "#FF6B6B" }]}>
-                                                {highPriorityCount}
-                                            </Text>
-                                            <Text style={[styles.statLabel, { color: "#FF6B6B" }]}>urgentes</Text>
-                                        </View>
-                                    )}
+                <View
+                    style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 300, overflow: 'hidden', paddingBottom: 24, }}
+                >
+                    <LinearGradient
+                        colors={colorScheme === 'dark'
+                            ? ['#1a1a1a', '#2d2d2d', '#1a1a1a']
+                            : [Colors.primary, '#4ADE80', '#6366f1']}
+                        start={{ x: -0.5, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ zIndex: 0, width: "100%", height: "100%", position: 'absolute' }}>
+                        <Animated.View style={[styles.floatingCircle1, { transform: [{ rotate: spin }] }]} />
+                        <Animated.View style={[styles.floatingCircle2, { transform: [{ rotate: spin }] }]} />
+                    </LinearGradient>
+                    <View style={[styles.headerTop, { paddingHorizontal: 24, paddingTop: 20, }]}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.headerTitle}>Notifications</Text>
+                            <View style={styles.headerStats}>
+                                <View style={styles.statBadge}>
+                                    <Text style={styles.statNumber}>{unreadCount}</Text>
+                                    <Text style={styles.statLabel}>non lues</Text>
                                 </View>
+                                {highPriorityCount > 0 && (
+                                    <View style={[styles.statBadge, styles.urgentBadge]}>
+                                        <Ionicons name="flame" size={14} color="#FF6B6B" />
+                                        <Text style={[styles.statNumber, { color: "#FF6B6B" }]}>
+                                            {highPriorityCount}
+                                        </Text>
+                                        <Text style={[styles.statLabel, { color: "#FF6B6B" }]}>urgentes</Text>
+                                    </View>
+                                )}
                             </View>
+                        </View>
+                        <View style={styles.headerButton}>
+                            <Image source={require("@/assets/images/logo.png")} style={{ width: 30, height: 30, objectFit: "contain" }} />
+                        </View>
+                    </View>
+
+                    {/* Actions rapides */}
+                    {unreadCount > 0 && (
+                        <View style={[styles.quickActions, { paddingHorizontal: 24, paddingTop: 20, }]}>
                             <TouchableOpacity
-                                style={styles.settingsButton}
-                                onPress={() => setShowSettings(true)}
+                                style={styles.quickActionButton}
+                                onPress={markAllAsRead}
                             >
-                                <Ionicons name="settings-outline" size={24} color="#FFF" />
+                                <Ionicons name="checkmark-done" size={18} color="#FFF" />
+                                <Text style={styles.quickActionText}>Tout lire</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.quickActionButton} onPress={clearAll}>
+                                <Ionicons name="trash-outline" size={18} color="#FFF" />
+                                <Text style={styles.quickActionText}>Effacer</Text>
                             </TouchableOpacity>
                         </View>
+                    )}
 
-                        {/* Actions rapides */}
-                        {unreadCount > 0 && (
-                            <View style={styles.quickActions}>
-                                <TouchableOpacity
-                                    style={styles.quickActionButton}
-                                    onPress={markAllAsRead}
-                                >
-                                    <Ionicons name="checkmark-done" size={18} color="#FFF" />
-                                    <Text style={styles.quickActionText}>Tout lire</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.quickActionButton} onPress={clearAll}>
-                                    <Ionicons name="trash-outline" size={18} color="#FFF" />
-                                    <Text style={styles.quickActionText}>Effacer</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-
-                        {/* Bouton Export et Options */}
-                        <View style={styles.headerActions}>
-                            <TouchableOpacity
-                                style={styles.headerActionButton}
-                                onPress={() => {
-                                    Alert.alert(
-                                        "Exporter les notifications",
-                                        "Choisissez un format",
-                                        [
-                                            {
-                                                text: "PDF",
-                                                onPress: () => Alert.alert("📄 Export", "Export en PDF en cours..."),
+                    {/* Bouton Export et Options */}
+                    <View style={[styles.headerActions, { paddingHorizontal: 24, }]}>
+                        <TouchableOpacity
+                            style={styles.headerActionButton}
+                            onPress={() => {
+                                Alert.alert(
+                                    "Exporter les notifications",
+                                    "Choisissez un format",
+                                    [
+                                        {
+                                            text: "PDF",
+                                            onPress: () => Alert.alert("📄 Export", "Export en PDF en cours..."),
+                                        },
+                                        {
+                                            text: "CSV",
+                                            onPress: () => Alert.alert("📊 Export", "Export en CSV en cours..."),
+                                        },
+                                        {
+                                            text: "Email",
+                                            onPress: () => Alert.alert("📧 Email", "Envoi par email..."),
+                                        },
+                                        { text: "Annuler", style: "cancel" },
+                                    ]
+                                );
+                            }}
+                        >
+                            <Ionicons name="download-outline" size={18} color="#FFF" />
+                            <Text style={styles.headerActionText}>Export</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.headerActionButton}
+                            onPress={() => {
+                                Alert.alert(
+                                    "Options avancées",
+                                    "Choisissez une action",
+                                    [
+                                        {
+                                            text: "Archiver les anciennes",
+                                            onPress: () => {
+                                                const now = new Date();
+                                                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                                                setNotifications(
+                                                    notifications.filter((n) => n.time >= weekAgo)
+                                                );
+                                                Alert.alert("✓ Archivé", "Notifications de plus de 7 jours archivées");
                                             },
-                                            {
-                                                text: "CSV",
-                                                onPress: () => Alert.alert("📊 Export", "Export en CSV en cours..."),
+                                        },
+                                        {
+                                            text: "Mode Ne pas déranger",
+                                            onPress: () => {
+                                                Alert.alert(
+                                                    "Ne pas déranger",
+                                                    "Durée ?",
+                                                    [
+                                                        {
+                                                            text: "1 heure",
+                                                            onPress: () => Alert.alert("🔕 Activé", "Notifications muettes pour 1h"),
+                                                        },
+                                                        {
+                                                            text: "Jusqu'à demain",
+                                                            onPress: () => Alert.alert("🔕 Activé", "Notifications muettes jusqu'à demain"),
+                                                        },
+                                                        { text: "Annuler", style: "cancel" },
+                                                    ]
+                                                );
                                             },
-                                            {
-                                                text: "Email",
-                                                onPress: () => Alert.alert("📧 Email", "Envoi par email..."),
+                                        },
+                                        {
+                                            text: "Statistiques",
+                                            onPress: () => {
+                                                const stats = {
+                                                    total: notifications.length,
+                                                    lues: notifications.filter(n => n.read).length,
+                                                    nonLues: notifications.filter(n => !n.read).length,
+                                                    urgentes: notifications.filter(n => n.priority === "high").length,
+                                                };
+                                                Alert.alert(
+                                                    "📊 Statistiques",
+                                                    `Total: ${stats.total}\nLues: ${stats.lues}\nNon lues: ${stats.nonLues}\nUrgentes: ${stats.urgentes}`
+                                                );
                                             },
-                                            { text: "Annuler", style: "cancel" },
-                                        ]
-                                    );
-                                }}
-                            >
-                                <Ionicons name="download-outline" size={18} color="#FFF" />
-                                <Text style={styles.headerActionText}>Export</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.headerActionButton}
-                                onPress={() => {
-                                    Alert.alert(
-                                        "Options avancées",
-                                        "Choisissez une action",
-                                        [
-                                            {
-                                                text: "Archiver les anciennes",
-                                                onPress: () => {
-                                                    const now = new Date();
-                                                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                                                    setNotifications(
-                                                        notifications.filter((n) => n.time >= weekAgo)
-                                                    );
-                                                    Alert.alert("✓ Archivé", "Notifications de plus de 7 jours archivées");
-                                                },
-                                            },
-                                            {
-                                                text: "Mode Ne pas déranger",
-                                                onPress: () => {
-                                                    Alert.alert(
-                                                        "Ne pas déranger",
-                                                        "Durée ?",
-                                                        [
-                                                            {
-                                                                text: "1 heure",
-                                                                onPress: () => Alert.alert("🔕 Activé", "Notifications muettes pour 1h"),
-                                                            },
-                                                            {
-                                                                text: "Jusqu'à demain",
-                                                                onPress: () => Alert.alert("🔕 Activé", "Notifications muettes jusqu'à demain"),
-                                                            },
-                                                            { text: "Annuler", style: "cancel" },
-                                                        ]
-                                                    );
-                                                },
-                                            },
-                                            {
-                                                text: "Statistiques",
-                                                onPress: () => {
-                                                    const stats = {
-                                                        total: notifications.length,
-                                                        lues: notifications.filter(n => n.read).length,
-                                                        nonLues: notifications.filter(n => !n.read).length,
-                                                        urgentes: notifications.filter(n => n.priority === "high").length,
-                                                    };
-                                                    Alert.alert(
-                                                        "📊 Statistiques",
-                                                        `Total: ${stats.total}\nLues: ${stats.lues}\nNon lues: ${stats.nonLues}\nUrgentes: ${stats.urgentes}`
-                                                    );
-                                                },
-                                            },
-                                            { text: "Annuler", style: "cancel" },
-                                        ]
-                                    );
-                                }}
-                            >
-                                <Ionicons name="ellipsis-horizontal" size={18} color="#FFF" />
-                                <Text style={styles.headerActionText}>Plus</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </ImageBackground>
-                </LinearGradient>
+                                        },
+                                        { text: "Annuler", style: "cancel" },
+                                    ]
+                                );
+                            }}
+                        >
+                            <Ionicons name="ellipsis-horizontal" size={18} color="#FFF" />
+                            <Text style={styles.headerActionText}>Plus</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
                 {/* Filtres */}
                 <ScrollView
@@ -882,7 +709,7 @@ export default function NotificationsPage() {
                                 {
                                     backgroundColor: filterType === option.type
                                         ? option.color
-                                        : isLight ? "#F5F5F5" : "#2A2A2A",
+                                        : isLight ? "#fff" : "#2A2A2A",
                                 },
                             ]}
                             onPress={() => setFilterType(option.type)}
@@ -1096,31 +923,3 @@ export default function NotificationsPage() {
     );
 }
 
-// Composant pour les lignes de paramètres
-const SettingRow = ({ icon, iconColor, title, subtitle, value, onValueChange, theme, isLast = false }: any) => (
-    <>
-        <View style={styles.settingRowContainer}>
-            <View style={styles.settingLeft}>
-                <View style={[styles.settingIconContainer, { backgroundColor: iconColor + "20" }]}>
-                    <Ionicons name={icon as any} size={22} color={iconColor} />
-                </View>
-                <View style={{ flex: 1 }}>
-                    <Text style={[styles.settingTitle, { color: theme.text }]}>
-                        {title}
-                    </Text>
-                    <Text style={[styles.settingSubtitle, { color: theme.text }]}>
-                        {subtitle}
-                    </Text>
-                </View>
-            </View>
-            <Switch
-                value={value}
-                onValueChange={onValueChange}
-                trackColor={{ false: "#767577", true: Colors.primary }}
-                thumbColor="#FFF"
-                ios_backgroundColor="#767577"
-            />
-        </View>
-        {!isLast && <View style={[styles.divider, { backgroundColor: theme.text + "15" }]} />}
-    </>
-);

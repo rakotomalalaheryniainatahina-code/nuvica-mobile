@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     View,
     ScrollView,
@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     Dimensions,
     ImageBackground,
+    Animated,
 } from "react-native";
 import { Colors } from "@/constant/Colors";
 import { Theme } from "@/types/ColorType";
@@ -161,9 +162,8 @@ const formatCurrency = (amount: number) => {
 
 export default function ReportsAnalyticsPage() {
     const colorScheme = useColorScheme();
-    const theme: Theme = (Colors[colorScheme as keyof typeof Colors] as Theme) ?? Colors.light;
+    const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const isLight = theme === Colors.light;
-
     const router = useRouter();
     // Calculs
     const currentMonth = MONTHLY_DATA[MONTHLY_DATA.length - 1];
@@ -204,70 +204,122 @@ export default function ReportsAnalyticsPage() {
         },
     };
 
+    // Animations
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Animation d'entrée
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(slideAnim, {
+                toValue: 0,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        // Animation de rotation continue pour l'icône
+        const rotationAnimation = Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 20000,
+                useNativeDriver: true,
+            })
+        );
+        rotationAnimation.start();
+
+        return () => {
+            rotationAnimation.stop();
+        };
+    }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
     return (
         <ThemedSafeAreaView style={{ backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }}>
             <ThemedScrollView stickyHeaderIndices={[0]}>
                 <TopHeros />
 
                 {/* Header modernisé avec gradient */}
-                <LinearGradient
-                    colors={[Colors.primary, '#4ADE80', '#6366f1']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }} style={styles.header}>
-                    <ImageBackground
-                        source={Images.starBG}
-                        style={styles.headerBackground}
-                    >
-                        <View style={styles.headerGradient}>
-                            <View style={styles.headerTop}>
-                                <View>
-                                    <ThemedText style={styles.headerSubtitle}>Octobre 2025</ThemedText>
-                                    <ThemedText style={styles.headerTitle}>Rapports & Analyses</ThemedText>
+                <View
+                    style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 295, overflow: 'hidden' }}
+                >
+                    <LinearGradient
+                        colors={colorScheme === 'dark'
+                            ? ['#1a1a1a', '#2d2d2d', '#1a1a1a']
+                            : [Colors.primary, '#4ADE80', '#6366f1']}
+                        start={{ x: -0.5, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ zIndex: 0, width: "100%", height: "100%", position: 'absolute' }}>
+                        <Animated.View style={[styles.floatingCircle1, { transform: [{ rotate: spin }] }]} />
+                        <Animated.View style={[styles.floatingCircle2, { transform: [{ rotate: spin }] }]} />
+                    </LinearGradient>
+                    <View style={styles.headerGradient}>
+                        <View style={styles.headerTop}>
+                            <View>
+                                <ThemedText style={styles.headerSubtitle}>Octobre 2025</ThemedText>
+                                <ThemedText style={styles.headerTitle}>Rapports & Analyses</ThemedText>
+                            </View>
+                            <TouchableOpacity style={styles.headerButton}>
+                                <Image source={require("@/assets/images/logo.png")} style={{ width: 30, height: 30, objectFit: "contain" }} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Quick Stats avec glassmorphism */}
+                        <View style={styles.quickStatsContainer}>
+                            <View style={styles.quickStatCard}>
+                                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.66)' }]}>
+                                    <Ionicons name="trending-up" size={18} color="#4ADE80" />
                                 </View>
-                                <TouchableOpacity style={styles.headerButton}>
-                                    <Image source={require("@/assets/images/logo.png")} style={{ width: 30, height: 30, objectFit: "contain" }} />
-                                </TouchableOpacity>
+                                <ThemedText style={styles.quickStatValue}>
+                                    {incomeChange >= 0 ? "+" : ""}
+                                    {incomeChange.toFixed(1)}%
+                                </ThemedText>
+                                <ThemedText style={styles.quickStatLabel}>Revenus</ThemedText>
                             </View>
 
-                            {/* Quick Stats avec glassmorphism */}
-                            <View style={styles.quickStatsContainer}>
-                                <View style={styles.quickStatCard}>
-                                    <View style={[styles.statIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.66)' }]}>
-                                        <Ionicons name="trending-up" size={18} color="#4ADE80" />
-                                    </View>
-                                    <ThemedText style={styles.quickStatValue}>
-                                        {incomeChange >= 0 ? "+" : ""}
-                                        {incomeChange.toFixed(1)}%
-                                    </ThemedText>
-                                    <ThemedText style={styles.quickStatLabel}>Revenus</ThemedText>
+                            <View style={styles.quickStatCard}>
+                                <View style={[styles.statIconContainer, { backgroundColor: expenseChange > 0 ? 'rgba(255, 107, 107, 0.15)' : 'rgba(74, 222, 128, 0.15)' }]}>
+                                    <Ionicons
+                                        name={expenseChange > 0 ? "trending-up" : "trending-down"}
+                                        size={18}
+                                        color={expenseChange > 0 ? "#FF6B6B" : "#4ADE80"}
+                                    />
                                 </View>
+                                <ThemedText style={styles.quickStatValue}>
+                                    {expenseChange >= 0 ? "+" : ""}
+                                    {expenseChange.toFixed(1)}%
+                                </ThemedText>
+                                <ThemedText style={styles.quickStatLabel}>Dépenses</ThemedText>
+                            </View>
 
-                                <View style={styles.quickStatCard}>
-                                    <View style={[styles.statIconContainer, { backgroundColor: expenseChange > 0 ? 'rgba(255, 107, 107, 0.15)' : 'rgba(74, 222, 128, 0.15)' }]}>
-                                        <Ionicons
-                                            name={expenseChange > 0 ? "trending-up" : "trending-down"}
-                                            size={18}
-                                            color={expenseChange > 0 ? "#FF6B6B" : "#4ADE80"}
-                                        />
-                                    </View>
-                                    <ThemedText style={styles.quickStatValue}>
-                                        {expenseChange >= 0 ? "+" : ""}
-                                        {expenseChange.toFixed(1)}%
-                                    </ThemedText>
-                                    <ThemedText style={styles.quickStatLabel}>Dépenses</ThemedText>
+                            <View style={styles.quickStatCard}>
+                                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(255, 165, 0, 0.15)' }]}>
+                                    <Ionicons name="wallet" size={18} color="#FFA500" />
                                 </View>
-
-                                <View style={styles.quickStatCard}>
-                                    <View style={[styles.statIconContainer, { backgroundColor: 'rgba(255, 165, 0, 0.15)' }]}>
-                                        <Ionicons name="wallet" size={18} color="#FFA500" />
-                                    </View>
-                                    <ThemedText style={styles.quickStatValue}>{savingsRate.toFixed(0)}%</ThemedText>
-                                    <ThemedText style={styles.quickStatLabel}>Épargne</ThemedText>
-                                </View>
+                                <ThemedText style={styles.quickStatValue}>{savingsRate.toFixed(0)}%</ThemedText>
+                                <ThemedText style={styles.quickStatLabel}>Épargne</ThemedText>
                             </View>
                         </View>
-                    </ImageBackground>
-                </LinearGradient>
+                    </View>
+                </View>
 
                 <ThemedView style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : "#0A0A0A" }]}>
                     {/* Conseils avec design moderne */}
