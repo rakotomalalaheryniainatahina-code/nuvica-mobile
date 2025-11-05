@@ -2,6 +2,89 @@ import { Colors } from "@/constant/Colors";
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
+     unreadBadge: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        backgroundColor: '#FF6B6B',
+        borderRadius: 20,
+        width: 10,
+        height: 10,
+        zIndex: 10,
+    },
+    unreadDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#FF6B6B',
+    },
+
+    // Styles pour les états de chargement
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+    },
+
+    // Amélioration des cartes d'alertes
+    alertCardWrapper: {
+        position: 'relative',
+    },
+    
+    // Badge de statut amélioré
+    statusBadgeContainer: {
+        flexDirection: 'row',
+        gap: 8,
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        zIndex: 10,
+    },
+
+    // Animation des alertes
+    alertCardAnimated: {
+        transform: [{ scale: 1 }],
+    },
+    
+    alertCardPressed: {
+        transform: [{ scale: 0.98 }],
+        opacity: 0.8,
+    },
+
+    // Indicateur de refresh
+    refreshIndicator: {
+        paddingVertical: 10,
+        alignItems: 'center',
+    },
+
+    // Message de statut
+    statusMessage: {
+        fontSize: 12,
+        textAlign: 'center',
+        marginTop: 4,
+    },
+
+    // Zone d'action rapide
+    quickActionButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+
+    quickActionText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: '600',
+    },
     floatingCircle1: {
         position: 'absolute',
         width: 300,

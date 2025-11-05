@@ -53,10 +53,10 @@ const styles = StyleSheet.create({
     summaryContainer: {
         flexDirection: "row",
         gap: 12,
-        marginBottom: 16,
+        marginBottom: 25,
+        height: 150,
     },
     summaryCard: {
-        flex: 1,
         flexDirection: "row",
         alignItems: "center",
         padding: 12,

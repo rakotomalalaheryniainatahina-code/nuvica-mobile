@@ -2,7 +2,7 @@
 import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://10.111.124.137:3000/auth'; // Changez selon votre configuration
+const API_URL = 'http://10.116.17.137:3000/auth'; // Changez selon votre configuration
 
 export const authService = {
     // Inscription
