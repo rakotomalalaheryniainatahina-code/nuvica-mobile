@@ -11,7 +11,7 @@ import Svg, { Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
 import styles from "@/styles/home";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { dashboardService, DashboardStats, AlertData } from "@/services/api/dashboardService";
+import { dashboardService, DashboardStats, AlertData } from "@/services/dashboardService";
 
 const Home = () => {
     const colorScheme = useColorScheme();
@@ -173,7 +173,7 @@ const Home = () => {
 
                 {/* Header Premium */}
                 <View
-                    style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 295, overflow: 'hidden' }}
+                    style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 'auto', overflow: 'hidden' }}
                 >
                     <LinearGradient
                         colors={colorScheme === 'dark'
@@ -223,14 +223,11 @@ const Home = () => {
                         {/* Quick Stats Modernes */}
                         <View style={styles.quickStatsContainer}>
                             <View style={styles.statCard}>
-                                <LinearGradient
-                                    colors={["#FB923C", "#EA580C"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.statIconGradient}
-                                >
-                                    <Ionicons name="wallet" size={20} color="#FFF" />
-                                </LinearGradient>
+                                    <View style={[styles.statIconGradient, {
+                                    backgroundColor:'#fb923c23'
+                                }]}>
+                                    <Ionicons name="wallet" size={20} color="#FB923C" />
+                                    </View>
                                 <View>
                                     <ThemedText style={styles.statLabel}>Budget</ThemedText>
                                     <ThemedText style={styles.statValue}>
@@ -240,14 +237,12 @@ const Home = () => {
                             </View>
 
                             <View style={styles.statCard}>
-                                <LinearGradient
-                                    colors={["#4ADE80", "#16A34A"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.statIconGradient}
-                                >
-                                    <Ionicons name="arrow-down-circle" size={20} color="#FFF" />
-                                </LinearGradient>
+                                <View style={[styles.statIconGradient, {
+                                    backgroundColor:'rgba(74, 222, 128, 0.15)'
+                                }]}>
+                                    <Ionicons name="arrow-down-circle" size={20} color="#4ADE80" />
+                                    
+                                </View>
                                 <View>
                                     <ThemedText style={styles.statLabel}>Revenus</ThemedText>
                                     <ThemedText style={styles.statValue}>
@@ -257,14 +252,12 @@ const Home = () => {
                             </View>
 
                             <View style={styles.statCard}>
-                                <LinearGradient
-                                    colors={["#F87171", "#DC2626"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.statIconGradient}
-                                >
-                                    <Ionicons name="arrow-up-circle" size={20} color="#FFF" />
-                                </LinearGradient>
+                                 <View style={[styles.statIconGradient, {
+                                    backgroundColor:'#f8717128'
+                                }]}>
+                                    <Ionicons name="arrow-up-circle" size={20} color="#F87171" />
+                                    
+                                </View>
                                 <View>
                                     <ThemedText style={styles.statLabel}>Dépenses</ThemedText>
                                     <ThemedText style={styles.statValue}>
@@ -427,7 +420,6 @@ const Home = () => {
                                             </View>
                                         </View>
 
-                                        <View style={[styles.cardIndicator, { backgroundColor: alertColor }]} />
                                     </TouchableOpacity>
                                 );
                             })}

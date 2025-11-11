@@ -1,6 +1,6 @@
 // services/api/dashboardService.ts
 
-import apiClient from "./apiClient";
+import apiClient from "./api/apiClient";
 
 export interface DashboardStats {
     currentBalance: number;

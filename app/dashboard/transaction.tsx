@@ -17,7 +17,7 @@ import ThemedSafeAreaView from "@/components/ThemedSafeAreaView";
 import { LinearGradient } from "expo-linear-gradient";
 import ThemedText from "@/components/ThemedText";
 import styles from "@/styles/transaction";
-import { TransactionResponse, transactionService } from "@/services/api/transactionService";
+import { TransactionResponse, transactionService } from "@/services/transactionService";
 import CustomAlert from "@/common/customAlert";
 
 // Types
@@ -544,7 +544,7 @@ export default function TransactionPage() {
                                         </View>
 
                                         {/* Card Indicator */}
-                                        <View style={[styles.cardIndicator, { backgroundColor: categoryData?.color || Colors.primary }]} />
+                                        {/* <View style={[styles.cardIndicator, { backgroundColor: categoryData?.color || Colors.primary }]} /> */}
                                     </TouchableOpacity>
                                 );
                             })}

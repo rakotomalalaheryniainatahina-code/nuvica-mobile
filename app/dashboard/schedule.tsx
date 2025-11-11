@@ -1,88 +1,25 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
     View,
     Text,
     ScrollView,
-    StyleSheet,
     useColorScheme,
     TouchableOpacity,
     TextInput,
     Modal,
     Alert,
-    Dimensions,
-    ImageBackground,
+    ActivityIndicator,
+    RefreshControl,
 } from "react-native";
 import { Colors } from "@/constant/Colors";
-import { Theme } from "@/types/ColorType";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import ThemedSafeAreaView from '@/components/ThemedSafeAreaView';
 import TopHeros from "@/components/Topheros";
-import Image from "@/constant/Images";
-import ThemedView from "@/components/ThemedView";
 import styles from "@/styles/schedule";
 import { Animated } from "react-native";
-
-// Types
-interface SavingsGoal {
-    id: string;
-    title: string;
-    targetAmount: number;
-    currentAmount: number;
-    deadline: Date;
-    category: string;
-    icon: string;
-    color: string;
-    monthlyContribution?: number;
-}
-
-// Données d'exemple
-const SAMPLE_GOALS: SavingsGoal[] = [
-    {
-        id: "1",
-        title: "Nouveau PC Gamer",
-        targetAmount: 2500000,
-        currentAmount: 1850000,
-        deadline: new Date(2025, 11, 31),
-        category: "Technologie",
-        icon: "laptop",
-        color: "#6366F1",
-        monthlyContribution: 250000,
-    },
-    {
-        id: "2",
-        title: "Voyage à Nosy Be",
-        targetAmount: 1200000,
-        currentAmount: 450000,
-        deadline: new Date(2026, 2, 15),
-        category: "Voyage",
-        icon: "airplane",
-        color: "#22D3EE",
-        monthlyContribution: 150000,
-    },
-    {
-        id: "3",
-        title: "Fonds d'urgence",
-        targetAmount: 3000000,
-        currentAmount: 2100000,
-        deadline: new Date(2026, 5, 30),
-        category: "Sécurité",
-        icon: "shield-checkmark",
-        color: "#4ADE80",
-        monthlyContribution: 150000,
-    },
-    {
-        id: "4",
-        title: "Nouvelle voiture",
-        targetAmount: 15000000,
-        currentAmount: 4500000,
-        deadline: new Date(2027, 0, 1),
-        category: "Transport",
-        icon: "car-sport",
-        color: "#F59E0B",
-        monthlyContribution: 500000,
-    },
-];
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { GoalResponse, goalService, GoalStatistics } from "@/services/goalService";
 
 const GOAL_CATEGORIES = [
     { name: "Technologie", icon: "laptop", color: "#6366F1" },
@@ -103,15 +40,16 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
-const calculateMonthsRemaining = (deadline: Date) => {
+const calculateMonthsRemaining = (deadline: string) => {
     const now = new Date();
+    const deadlineDate = new Date(deadline);
     const months = Math.ceil(
-        (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
+        (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
     );
     return Math.max(0, months);
 };
 
-const calculateSuggestion = (targetAmount: number, currentAmount: number, deadline: Date) => {
+const calculateSuggestion = (targetAmount: number, currentAmount: number, deadline: string) => {
     const remaining = targetAmount - currentAmount;
     const monthsLeft = calculateMonthsRemaining(deadline);
     if (monthsLeft === 0) return null;
@@ -131,76 +69,145 @@ export default function SavingsGoalsPage() {
     const colorScheme = useColorScheme();
     const theme: any = Colors[colorScheme as keyof typeof Colors] ?? Colors.light
     const isLight = theme === Colors.light;
-    const [goals, setGoals] = useState<SavingsGoal[]>(SAMPLE_GOALS);
+
+    const [goals, setGoals] = useState<GoalResponse[]>([]);
+    const [statistics, setStatistics] = useState<GoalStatistics | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
     const [showAddModal, setShowAddModal] = useState(false);
     const [showContributeModal, setShowContributeModal] = useState(false);
-    const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
+    const [selectedGoal, setSelectedGoal] = useState<GoalResponse | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
     // Form states
     const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
     const [targetAmount, setTargetAmount] = useState("");
-    const [deadline, setDeadline] = useState(new Date());
+    const [currentAmount, setCurrentAmount] = useState("");
+    const [deadline, setDeadline] = useState(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
     const [category, setCategory] = useState("");
     const [contributionAmount, setContributionAmount] = useState("");
 
-    // Statistiques
-    const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
-    const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
-    const overallProgress = (totalSaved / totalTarget) * 100;
-    const completedGoals = goals.filter(g => g.currentAmount >= g.targetAmount).length;
+    // Charger les objectifs et statistiques
+    const loadGoals = useCallback(async () => {
+        try {
+            setLoading(true);
+            const [goalsData, statsData] = await Promise.all([
+                goalService.getAll(),
+                goalService.getStatistics(),
+            ]);
+            setGoals(goalsData);
+            setStatistics(statsData);
+        } catch (error) {
+            console.error("Erreur lors du chargement des objectifs:", error);
+            Alert.alert("Erreur", "Impossible de charger les objectifs");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    const handleAddGoal = () => {
+    useEffect(() => {
+        loadGoals();
+    }, [loadGoals]);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadGoals();
+        setRefreshing(false);
+    };
+
+    const handleAddGoal = async () => {
         if (!title || !targetAmount || !category) {
-            Alert.alert("Erreur", "Veuillez remplir tous les champs");
+            Alert.alert("Erreur", "Veuillez remplir tous les champs obligatoires");
             return;
         }
 
-        const categoryData = GOAL_CATEGORIES.find(cat => cat.name === category);
-        const newGoal: SavingsGoal = {
-            id: Date.now().toString(),
-            title,
-            targetAmount: parseFloat(targetAmount),
-            currentAmount: 0,
-            deadline,
-            category,
-            icon: categoryData?.icon || "star",
-            color: categoryData?.color || Colors.primary,
-        };
+        try {
+            setSubmitting(true);
+            const categoryData = GOAL_CATEGORIES.find(cat => cat.name === category);
 
-        setGoals([...goals, newGoal]);
-        setShowAddModal(false);
-        resetForm();
+            const newGoalData = {
+                title,
+                description: description || undefined,
+                targetAmount: parseFloat(targetAmount),
+                currentAmount: currentAmount ? parseFloat(currentAmount) : 0,
+                deadline: deadline.toISOString(),
+                category,
+                icon: categoryData?.icon || "star",
+                color: categoryData?.color || Colors.primary,
+                priority: 'MEDIUM' as const,
+            };
+
+            await goalService.create(newGoalData);
+            await loadGoals();
+
+            setShowAddModal(false);
+            Alert.alert("Succès", "Objectif créé avec succès");
+            resetForm();
+        } catch (error: any) {
+            console.error("Erreur lors de l'ajout:", error);
+            Alert.alert(
+                "Erreur",
+                error.response?.data?.message || "Impossible de créer l'objectif"
+            );
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const handleContribute = () => {
-        if (!selectedGoal || !contributionAmount) return;
+    const handleContribute = async () => {
+        if (!selectedGoal || !contributionAmount) {
+            Alert.alert("Erreur", "Veuillez entrer un montant");
+            return;
+        }
 
-        const amount = parseFloat(contributionAmount);
-        setGoals(
-            goals.map(g =>
-                g.id === selectedGoal.id
-                    ? { ...g, currentAmount: Math.min(g.currentAmount + amount, g.targetAmount) }
-                    : g
-            )
-        );
+        try {
+            setSubmitting(true);
+            const amount = parseFloat(contributionAmount);
 
-        setShowContributeModal(false);
-        setSelectedGoal(null);
-        setContributionAmount("");
+            await goalService.addContribution(
+                selectedGoal.id,
+                amount,
+                `Contribution du ${new Date().toLocaleDateString()}`
+            );
 
-        Alert.alert("Succès", `Vous avez ajouté ${formatCurrency(amount)} à votre objectif !`);
+            await loadGoals();
+            setShowContributeModal(false);
+            setSelectedGoal(null);
+            setContributionAmount("");
+
+            Alert.alert("Succès", `Vous avez ajouté ${formatCurrency(amount)} à votre objectif !`);
+        } catch (error: any) {
+            console.error("Erreur:", error);
+            Alert.alert(
+                "Erreur",
+                error.response?.data?.message || "Impossible d'ajouter la contribution"
+            );
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const handleDeleteGoal = (id: string) => {
+    const handleDeleteGoal = (id: string, title: string) => {
         Alert.alert(
             "Supprimer l'objectif",
-            "Êtes-vous sûr de vouloir supprimer cet objectif ?",
+            `Êtes-vous sûr de vouloir supprimer "${title}" ?`,
             [
                 { text: "Annuler", style: "cancel" },
                 {
                     text: "Supprimer",
                     style: "destructive",
-                    onPress: () => setGoals(goals.filter(g => g.id !== id)),
+                    onPress: async () => {
+                        try {
+                            await goalService.delete(id);
+                            await loadGoals();
+                            Alert.alert("Succès", "Objectif supprimé");
+                        } catch (error) {
+                            Alert.alert("Erreur", "Impossible de supprimer l'objectif");
+                        }
+                    },
                 },
             ]
         );
@@ -208,12 +215,14 @@ export default function SavingsGoalsPage() {
 
     const resetForm = () => {
         setTitle("");
+        setDescription("");
         setTargetAmount("");
+        setCurrentAmount("");
         setCategory("");
-        setDeadline(new Date());
+        setDeadline(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
     };
 
-    const openContributeModal = (goal: SavingsGoal) => {
+    const openContributeModal = (goal: GoalResponse) => {
         setSelectedGoal(goal);
         setShowContributeModal(true);
     };
@@ -225,7 +234,6 @@ export default function SavingsGoalsPage() {
     const rotateAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        // Animation d'entrée
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -246,7 +254,6 @@ export default function SavingsGoalsPage() {
             }),
         ]).start();
 
-        // Animation de rotation continue pour l'icône
         const rotationAnimation = Animated.loop(
             Animated.timing(rotateAnim, {
                 toValue: 1,
@@ -266,8 +273,26 @@ export default function SavingsGoalsPage() {
         outputRange: ['0deg', '360deg'],
     });
 
+    if (loading && !refreshing) {
+        return (
+            <ThemedSafeAreaView style={{ backgroundColor: theme.background }}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <Text style={{ marginTop: 16, color: theme.text }}>
+                        Chargement des objectifs...
+                    </Text>
+                </View>
+            </ThemedSafeAreaView>
+        );
+    }
+
+    const totalTarget = statistics?.totalTargetAmount || 0;
+    const totalSaved = statistics?.totalCurrentAmount || 0;
+    const overallProgress = statistics?.overallProgress || 0;
+    const completedGoals = statistics?.completedGoals || 0;
+
     return (
-        <ThemedSafeAreaView style={{ backgroundColor: theme.background  }}>
+        <ThemedSafeAreaView style={{ backgroundColor: theme.background }}>
             <View style={{ width: "100%", height: "auto", zIndex: 2 }}>
                 <TopHeros />
             </View>
@@ -276,11 +301,12 @@ export default function SavingsGoalsPage() {
                 style={[styles.content, { backgroundColor: isLight ? "#F5F5F7" : theme.background }]}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 120 }}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+                }
             >
                 {/* Modern Header */}
-                <View
-                    style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 365, overflow: 'hidden' }}
-                >
+                <View style={{ position: 'relative', top: 0, left: 0, width: '100%', height: 'auto', overflow: 'hidden' }}>
                     <LinearGradient
                         colors={colorScheme === 'dark'
                             ? ['#1a1a1a', '#2d2d2d', '#1a1a1a']
@@ -322,7 +348,7 @@ export default function SavingsGoalsPage() {
                                             />
                                         </View>
                                         <Text style={styles.progressPercentage}>
-                                            {overallProgress.toFixed(2)}%
+                                            {overallProgress.toFixed(1)}%
                                         </Text>
                                     </View>
                                 </View>
@@ -381,12 +407,10 @@ export default function SavingsGoalsPage() {
                     </View>
 
                     {goals.map(goal => {
-                        const progress = (goal.currentAmount / goal.targetAmount) * 100;
-                        const remaining = goal.targetAmount - goal.currentAmount;
-                        const isCompleted = progress >= 100;
+                        const isCompleted = goal.isCompleted;
                         const suggestion = calculateSuggestion(
                             goal.targetAmount,
-                            goal.currentAmount,
+                            goal.currentAmount as number,
                             goal.deadline
                         );
 
@@ -398,7 +422,7 @@ export default function SavingsGoalsPage() {
                                     { backgroundColor: isLight ? "#FFFFFF" : "#151515" },
                                 ]}
                                 onPress={() => openContributeModal(goal)}
-                                onLongPress={() => handleDeleteGoal(goal.id)}
+                                onLongPress={() => handleDeleteGoal(goal.id, goal.title)}
                                 activeOpacity={0.7}
                             >
                                 {/* Card Header */}
@@ -406,15 +430,15 @@ export default function SavingsGoalsPage() {
                                     <View style={styles.goalHeaderLeft}>
                                         <LinearGradient
                                             colors={[
-                                                goal.color,
-                                                adjustColorBrightness(goal.color, -20)
+                                                goal.color || Colors.primary,
+                                                adjustColorBrightness(goal.color || Colors.primary, -20)
                                             ]}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 1 }}
                                             style={styles.modernGoalIcon}
                                         >
                                             <Ionicons
-                                                name={goal.icon as any}
+                                                name={goal.icon as any || "star"}
                                                 size={28}
                                                 color="#FFF"
                                             />
@@ -424,7 +448,7 @@ export default function SavingsGoalsPage() {
                                                 {goal.title}
                                             </Text>
                                             <View style={styles.categoryBadge}>
-                                                <View style={[styles.categoryDot, { backgroundColor: goal.color }]} />
+                                                <View style={[styles.categoryDot, { backgroundColor: goal.color || Colors.primary }]} />
                                                 <Text style={[styles.modernGoalCategory, { color: isLight ? "#666" : "#AAA" }]}>
                                                     {goal.category}
                                                 </Text>
@@ -452,8 +476,8 @@ export default function SavingsGoalsPage() {
                                         <Text style={[styles.modernAmountLabel, { color: isLight ? "#666" : "#AAA" }]}>
                                             Épargné
                                         </Text>
-                                        <Text style={[styles.modernAmountValue, { color: goal.color }]}>
-                                            {formatCurrency(goal.currentAmount)}
+                                        <Text style={[styles.modernAmountValue, { color: goal.color || Colors.primary }]}>
+                                            {formatCurrency(goal.currentAmount as number)}
                                         </Text>
                                     </View>
                                     <View style={[styles.modernAmountDivider, { backgroundColor: isLight ? "#E5E5E5" : "#2A2A2A" }]} />
@@ -470,26 +494,26 @@ export default function SavingsGoalsPage() {
                                 {/* Progress Section */}
                                 <View style={styles.modernProgressContainer}>
                                     <View style={styles.progressHeader}>
-                                        <Text style={[styles.progressLabel, { color: goal.color }]}>
-                                            {progress.toFixed(0)}% complété
+                                        <Text style={[styles.progressLabel, { color: goal.color || Colors.primary }]}>
+                                            {goal.percentage}% complété
                                         </Text>
                                         <Text style={[styles.remainingLabel, { color: isLight ? "#666" : "#AAA" }]}>
                                             {isCompleted
                                                 ? "Objectif atteint! 🎉"
-                                                : `Reste ${formatCurrency(remaining)}`}
+                                                : `Reste ${formatCurrency(goal.remaining)}`}
                                         </Text>
                                     </View>
                                     <View style={[styles.modernProgressBar, { backgroundColor: isLight ? "#F0F0F0" : "#2A2A2A" }]}>
                                         <LinearGradient
                                             colors={[
-                                                isCompleted ? "#4ADE80" : goal.color,
-                                                isCompleted ? "#22C55E" : adjustColorBrightness(goal.color, -20)
+                                                isCompleted ? "#4ADE80" : (goal.color || Colors.primary),
+                                                isCompleted ? "#22C55E" : adjustColorBrightness(goal.color || Colors.primary, -20)
                                             ]}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 0 }}
                                             style={[
                                                 styles.modernProgressFill,
-                                                { width: `${Math.min(progress, 100)}%` }
+                                                { width: `${Math.min(goal.percentage, 100)}%` }
                                             ]}
                                         />
                                     </View>
@@ -497,18 +521,18 @@ export default function SavingsGoalsPage() {
 
                                 {/* Suggestion Card */}
                                 {!isCompleted && suggestion && (
-                                    <View style={[styles.modernSuggestionCard, { backgroundColor: goal.color + "10" }]}>
+                                    <View style={[styles.modernSuggestionCard, { backgroundColor: (goal.color || Colors.primary) + "10" }]}>
                                         <View style={styles.suggestionHeader}>
-                                            <View style={[styles.suggestionIcon, { backgroundColor: goal.color + "20" }]}>
-                                                <Ionicons name="bulb" size={18} color={goal.color} />
+                                            <View style={[styles.suggestionIcon, { backgroundColor: (goal.color || Colors.primary) + "20" }]}>
+                                                <Ionicons name="bulb" size={18} color={goal.color || Colors.primary} />
                                             </View>
-                                            <Text style={[styles.modernSuggestionTitle, { color: goal.color }]}>
+                                            <Text style={[styles.modernSuggestionTitle, { color: goal.color || Colors.primary }]}>
                                                 Plan d'épargne suggéré
                                             </Text>
                                         </View>
                                         <Text style={[styles.modernSuggestionText, { color: theme.text }]}>
                                             Épargnez{" "}
-                                            <Text style={{ fontWeight: "800", color: goal.color }}>
+                                            <Text style={{ fontWeight: "800", color: goal.color || Colors.primary }}>
                                                 {formatCurrency(suggestion.monthlyAmount)}/mois
                                             </Text>{" "}
                                             pour atteindre votre objectif en{" "}
@@ -519,18 +543,18 @@ export default function SavingsGoalsPage() {
                                         <View style={styles.modernDeadlineContainer}>
                                             <Ionicons name="calendar-outline" size={14} color={isLight ? "#666" : "#AAA"} />
                                             <Text style={[styles.modernDeadlineText, { color: isLight ? "#666" : "#AAA" }]}>
-                                                Échéance: {goal.deadline.toLocaleDateString("fr-FR", {
+                                                Échéance: {new Date(goal.deadline).toLocaleDateString("fr-FR", {
                                                     day: "numeric",
                                                     month: "long",
                                                     year: "numeric",
-                                                })}
+                                                })} ({goal.daysLeft} jours restants)
                                             </Text>
                                         </View>
                                     </View>
                                 )}
 
                                 {/* Color Indicator */}
-                                <View style={[styles.goalColorIndicator, { backgroundColor: goal.color }]} />
+                                {/* <View style={[styles.goalColorIndicator, { backgroundColor: goal.color || Colors.primary }]} /> */}
                             </TouchableOpacity>
                         );
                     })}
@@ -589,7 +613,9 @@ export default function SavingsGoalsPage() {
                 animationType="slide"
                 transparent
                 onRequestClose={() => setShowAddModal(false)}
+                style={{ position: 'absolute', top: 0, left: 0, flex: 1 }}
             >
+                
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { backgroundColor: isLight ? "#FFF" : "#151515" }]}>
                         <View style={styles.modalHeader}>
@@ -603,7 +629,10 @@ export default function SavingsGoalsPage() {
                             </View>
                             <TouchableOpacity
                                 style={[styles.modalCloseButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
-                                onPress={() => setShowAddModal(false)}
+                                onPress={() => {
+                                    setShowAddModal(false);
+                                    resetForm();
+                                }}
                             >
                                 <Ionicons name="close" size={24} color={theme.text} />
                             </TouchableOpacity>
@@ -688,7 +717,25 @@ export default function SavingsGoalsPage() {
                                 </ScrollView>
                             </View>
 
-                            {/* Amount Input */}
+                            {/* Description Input */}
+                            <View style={styles.modernInputGroup}>
+                                <Text style={[styles.modernInputLabel, { color: theme.text }]}>
+                                    Description (optionnelle)
+                                </Text>
+                                <View style={[styles.modernInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                                    <Ionicons name="document-text-outline" size={20} color={isLight ? "#999" : "#666"} />
+                                    <TextInput
+                                        style={[styles.modernInput, { color: theme.text }]}
+                                        placeholder="Ex: Pour le gaming et le développement..."
+                                        placeholderTextColor={isLight ? "#999" : "#666"}
+                                        value={description}
+                                        onChangeText={setDescription}
+                                        multiline
+                                    />
+                                </View>
+                            </View>
+
+                            {/* Target Amount Input */}
                             <View style={styles.modernInputGroup}>
                                 <Text style={[styles.modernInputLabel, { color: theme.text }]}>
                                     Montant objectif
@@ -709,18 +756,75 @@ export default function SavingsGoalsPage() {
                                 </View>
                             </View>
 
+                            {/* Current Amount Input */}
+                            <View style={styles.modernInputGroup}>
+                                <Text style={[styles.modernInputLabel, { color: theme.text }]}>
+                                    Montant initial (optionnel)
+                                </Text>
+                                <View style={[styles.modernInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
+                                    <Ionicons name="wallet-outline" size={20} color={isLight ? "#999" : "#666"} />
+                                    <TextInput
+                                        style={[styles.modernInput, { color: theme.text }]}
+                                        placeholder="Ex: 500000"
+                                        placeholderTextColor={isLight ? "#999" : "#666"}
+                                        keyboardType="numeric"
+                                        value={currentAmount}
+                                        onChangeText={setCurrentAmount}
+                                    />
+                                    <Text style={[styles.currencyLabel, { color: isLight ? "#999" : "#666" }]}>
+                                        Ar
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Deadline Input */}
+                            <View style={styles.modernInputGroup}>
+                                <Text style={[styles.modernInputLabel, { color: theme.text }]}>
+                                    Date d'échéance
+                                </Text>
+                                <TouchableOpacity
+                                    style={[styles.modernInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
+                                    onPress={() => setShowDatePicker(true)}
+                                >
+                                    <Ionicons name="calendar-outline" size={20} color={isLight ? "#999" : "#666"} />
+                                    <Text style={[styles.modernInput, { color: theme.text }]}>
+                                        {deadline.toLocaleDateString("fr-FR", {
+                                            day: "numeric",
+                                            month: "long",
+                                            year: "numeric",
+                                        })}
+                                    </Text>
+                                    <Ionicons name="chevron-down" size={20} color={isLight ? "#999" : "#666"} />
+                                </TouchableOpacity>
+                            </View>
+
+                            {showDatePicker && (
+                                <DateTimePicker
+                                    value={deadline}
+                                    mode="date"
+                                    display="default"
+                                    onChange={(event, selectedDate) => {
+                                        setShowDatePicker(false);
+                                        if (selectedDate) {
+                                            setDeadline(selectedDate);
+                                        }
+                                    }}
+                                    minimumDate={new Date()}
+                                />
+                            )}
+
                             {/* Submit Button */}
                             <TouchableOpacity
                                 style={[
                                     styles.modernSubmitButton,
-                                    (!title || !category || !targetAmount) && styles.submitButtonDisabled,
+                                    (!title || !category || !targetAmount || submitting) && styles.submitButtonDisabled,
                                 ]}
                                 onPress={handleAddGoal}
-                                disabled={!title || !category || !targetAmount}
+                                disabled={!title || !category || !targetAmount || submitting}
                                 activeOpacity={0.8}
                             >
                                 <LinearGradient
-                                    colors={(!title || !category || !targetAmount)
+                                    colors={(!title || !category || !targetAmount || submitting)
                                         ? ["#CCC", "#AAA"]
                                         : [Colors.primary, adjustColorBrightness(Colors.primary, -20)]
                                     }
@@ -728,10 +832,16 @@ export default function SavingsGoalsPage() {
                                     end={{ x: 1, y: 1 }}
                                     style={styles.submitButtonGradient}
                                 >
-                                    <Ionicons name="checkmark-circle" size={24} color="#FFF" />
-                                    <Text style={styles.modernSubmitButtonText}>
-                                        Créer l'objectif
-                                    </Text>
+                                    {submitting ? (
+                                        <ActivityIndicator size="small" color="#FFF" />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                                            <Text style={styles.modernSubmitButtonText}>
+                                                Créer l'objectif
+                                            </Text>
+                                        </>
+                                    )}
                                 </LinearGradient>
                             </TouchableOpacity>
                         </ScrollView>
@@ -744,7 +854,11 @@ export default function SavingsGoalsPage() {
                 visible={showContributeModal}
                 animationType="slide"
                 transparent
-                onRequestClose={() => setShowContributeModal(false)}
+                onRequestClose={() => {
+                    setShowContributeModal(false);
+                    setSelectedGoal(null);
+                    setContributionAmount("");
+                }}
             >
                 <View style={styles.modalOverlay}>
                     <View
@@ -765,28 +879,32 @@ export default function SavingsGoalsPage() {
                             </View>
                             <TouchableOpacity
                                 style={[styles.modalCloseButton, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}
-                                onPress={() => setShowContributeModal(false)}
+                                onPress={() => {
+                                    setShowContributeModal(false);
+                                    setSelectedGoal(null);
+                                    setContributionAmount("");
+                                }}
                             >
                                 <Ionicons name="close" size={24} color={theme.text} />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={{ height: "100%" }} showsVerticalScrollIndicator={false} >
 
+                        <ScrollView style={{ height: "100%" }} showsVerticalScrollIndicator={false}>
                             {selectedGoal && (
                                 <>
                                     {/* Goal Preview */}
                                     <View style={styles.modernGoalPreview}>
                                         <LinearGradient
                                             colors={[
-                                                selectedGoal.color,
-                                                adjustColorBrightness(selectedGoal.color, -20)
+                                                selectedGoal.color || Colors.primary,
+                                                adjustColorBrightness(selectedGoal.color || Colors.primary, -20)
                                             ]}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 1 }}
                                             style={styles.modernGoalPreviewIcon}
                                         >
                                             <Ionicons
-                                                name={selectedGoal.icon as any}
+                                                name={selectedGoal.icon as any || "star"}
                                                 size={36}
                                                 color="#FFF"
                                             />
@@ -795,8 +913,8 @@ export default function SavingsGoalsPage() {
                                             {selectedGoal.title}
                                         </Text>
                                         <View style={styles.goalPreviewProgress}>
-                                            <Text style={[styles.goalPreviewAmount, { color: selectedGoal.color }]}>
-                                                {formatCurrency(selectedGoal.currentAmount)}
+                                            <Text style={[styles.goalPreviewAmount, { color: selectedGoal.color || Colors.primary }]}>
+                                                {formatCurrency(selectedGoal.currentAmount as number)}
                                             </Text>
                                             <Text style={[styles.goalPreviewSeparator, { color: isLight ? "#999" : "#666" }]}>
                                                 /
@@ -812,8 +930,8 @@ export default function SavingsGoalsPage() {
                                                 style={[
                                                     styles.previewProgressFill,
                                                     {
-                                                        width: `${Math.min((selectedGoal.currentAmount / selectedGoal.targetAmount) * 100, 100)}%`,
-                                                        backgroundColor: selectedGoal.color
+                                                        width: `${Math.min(selectedGoal.percentage, 100)}%`,
+                                                        backgroundColor: selectedGoal.color || Colors.primary
                                                     }
                                                 ]}
                                             />
@@ -826,7 +944,7 @@ export default function SavingsGoalsPage() {
                                             Montant à ajouter
                                         </Text>
                                         <View style={[styles.modernAmountInputContainer, { backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F" }]}>
-                                            <Ionicons name="add-circle-outline" size={24} color={selectedGoal.color} />
+                                            <Ionicons name="add-circle-outline" size={24} color={selectedGoal.color || Colors.primary} />
                                             <TextInput
                                                 style={[styles.modernAmountInput, { color: theme.text }]}
                                                 placeholder="0"
@@ -855,7 +973,7 @@ export default function SavingsGoalsPage() {
                                                         {
                                                             backgroundColor: isLight ? "#F5F5F5" : "#1F1F1F",
                                                             borderColor: contributionAmount === amount.toString()
-                                                                ? selectedGoal.color
+                                                                ? (selectedGoal.color || Colors.primary)
                                                                 : "transparent"
                                                         },
                                                     ]}
@@ -866,7 +984,7 @@ export default function SavingsGoalsPage() {
                                                         name="add"
                                                         size={16}
                                                         color={contributionAmount === amount.toString()
-                                                            ? selectedGoal.color
+                                                            ? (selectedGoal.color || Colors.primary)
                                                             : (isLight ? "#666" : "#AAA")
                                                         }
                                                     />
@@ -875,7 +993,7 @@ export default function SavingsGoalsPage() {
                                                             styles.modernQuickAmountText,
                                                             {
                                                                 color: contributionAmount === amount.toString()
-                                                                    ? selectedGoal.color
+                                                                    ? (selectedGoal.color || Colors.primary)
                                                                     : theme.text
                                                             },
                                                         ]}
@@ -891,31 +1009,36 @@ export default function SavingsGoalsPage() {
                                     <TouchableOpacity
                                         style={[
                                             styles.modernSubmitButton,
-                                            !contributionAmount && styles.submitButtonDisabled,
+                                            (!contributionAmount || submitting) && styles.submitButtonDisabled,
                                         ]}
                                         onPress={handleContribute}
-                                        disabled={!contributionAmount}
+                                        disabled={!contributionAmount || submitting}
                                         activeOpacity={0.8}
                                     >
                                         <LinearGradient
-                                            colors={!contributionAmount
+                                            colors={(!contributionAmount || submitting)
                                                 ? ["#CCC", "#AAA"]
-                                                : [selectedGoal.color, adjustColorBrightness(selectedGoal.color, -20)]
+                                                : [selectedGoal.color || Colors.primary, adjustColorBrightness(selectedGoal.color || Colors.primary, -20)]
                                             }
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 1 }}
                                             style={styles.submitButtonGradient}
                                         >
-                                            <Ionicons name="checkmark-circle" size={24} color="#FFF" />
-                                            <Text style={styles.modernSubmitButtonText}>
-                                                Confirmer l'ajout
-                                            </Text>
+                                            {submitting ? (
+                                                <ActivityIndicator size="small" color="#FFF" />
+                                            ) : (
+                                                <>
+                                                    <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                                                    <Text style={styles.modernSubmitButtonText}>
+                                                        Confirmer l'ajout
+                                                    </Text>
+                                                </>
+                                            )}
                                         </LinearGradient>
                                     </TouchableOpacity>
                                 </>
                             )}
                         </ScrollView>
-
                     </View>
                 </View>
             </Modal>

@@ -1,31 +1,34 @@
-import { StyleSheet } from "react-native";
-import { Dimensions } from "react-native";
-
+import { Colors } from "@/constant/Colors";
+import { Dimensions, StyleSheet } from "react-native";
 const { width } = Dimensions.get("window");
 
-
 const styles = StyleSheet.create({
-    floatingCircle1: {
-        position: 'absolute',
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        top: -100,
-        right: -50,
+    emptyState: {
+        alignItems: "center",
+        paddingVertical: 80,
     },
-    floatingCircle2: {
-        position: 'absolute',
-        width: 200,
-        height: 200,
-        borderRadius: 100,
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        bottom: 50,
-        left: -50,
+     emptyIcon: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 20,
+    },
+    emptyText: {
+        fontSize: 20,
+        fontWeight: "700",
+        marginBottom: 8,
+    },
+    emptySubtext: {
+        fontSize: 15,
+        opacity: 0.6,
+        textAlign: "center",
     },
     header: {
         height: 240,
         overflow: 'hidden',
+        backgroundColor: Colors.primary,
     },
     headerBackground: {
         width: "100%",
@@ -55,33 +58,11 @@ const styles = StyleSheet.create({
         color: "#FFF",
         letterSpacing: -0.5,
     },
-    emptyState: {
-        alignItems: "center",
-        paddingVertical: 80,
-    },
-     emptyIcon: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 20,
-    },
-    emptyText: {
-        fontSize: 20,
-        fontWeight: "700",
-        marginBottom: 8,
-    },
-    emptySubtext: {
-        fontSize: 15,
-        opacity: 0.6,
-        textAlign: "center",
-    },
     headerButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: "#fff",
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -146,7 +127,6 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         marginBottom: 12,
         borderWidth: 1,
-        // borderLeftWidth: 0,
         borderColor: "rgba(126, 124, 124, 0.2)",
     },
     insightHeader: {
@@ -332,5 +312,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 });
+
 
 export default styles

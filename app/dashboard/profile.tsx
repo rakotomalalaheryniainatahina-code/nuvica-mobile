@@ -20,6 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import styles from "@/styles/profile";
 import { Animated } from "react-native";
 import { useRouter } from "expo-router";
+import { authService } from "@/services/authService";
 
 type ProfileData = {
     firstName: string;
@@ -70,20 +71,22 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
     );
 
 
-    const handleLogout = () => {
+      const handleLogout = async () => {
         Alert.alert(
-            "Déconnexion",
-            "Êtes-vous sûr de vouloir vous déconnecter ?",
-            [
-                { text: "Annuler", style: "cancel" },
-                {
-                    text: "Déconnexion",
-                    style: "destructive",
-                    onPress: () => console.log("Déconnexion..."),
-                },
-            ]
+          "Déconnexion",
+          "Êtes-vous sûr de vouloir vous déconnecter ?",
+          [
+            { text: "Annuler", style: "cancel" },
+            {
+              text: "Oui",
+              onPress: async () => {
+                await authService.logout();  // supprime le token et l'utilisateur
+                router.replace("/auth/login"); // redirige vers la page de login
+              },
+            },
+          ]
         );
-    };
+      };
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -182,7 +185,6 @@ export default function ProfilePage({ initialData }: ProfileInfoModalProps) {
             {rightElement || (
                 <Ionicons name="chevron-forward" size={22} color={theme.text} style={{ opacity: 0.4 }} />
             )}
-            <View style={[styles.cardIndicator, { backgroundColor: danger ? "#FF6B6B" : Colors.primary }]} />
 
         </TouchableOpacity>
     );

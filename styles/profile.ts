@@ -157,7 +157,6 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         marginBottom: 10,
         borderWidth: 1,
-        borderLeftWidth: 0,
         borderColor: "rgba(126, 124, 124, 0.2)",
     },
     menuLeft: {

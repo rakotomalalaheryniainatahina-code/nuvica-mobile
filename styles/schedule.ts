@@ -165,7 +165,6 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         marginBottom: 16,
         borderWidth: 1,
-        borderLeftWidth: 0,
         borderColor: "rgba(126, 124, 124, 0.2)",
         position: "relative",
         overflow: "hidden",
@@ -391,6 +390,7 @@ const styles = StyleSheet.create({
         justifyContent: "flex-end",
     },
     modalContent: {
+        height: "90%",
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
         paddingTop: 24,

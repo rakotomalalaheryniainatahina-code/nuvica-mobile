@@ -244,7 +244,6 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         padding: 20,
         borderWidth: 1,
-        borderLeftWidth: 0,
         borderColor: "rgba(126, 124, 124, 0.2)",
     },
     alertCardHeader: {

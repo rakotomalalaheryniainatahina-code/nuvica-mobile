@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 6,
         borderWidth: 1,
-        borderLeftWidth: 0,
+        // borderLeftWidth: 0,
         borderColor: "rgba(126, 124, 124, 0.2)",
     },
     transactionLeft: {

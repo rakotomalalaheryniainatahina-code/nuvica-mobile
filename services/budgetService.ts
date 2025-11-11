@@ -1,6 +1,6 @@
 // services/api/budgetService.ts
 
-import apiClient from "./apiClient";
+import apiClient from "./api/apiClient";
 
 export interface BudgetData {
     category: string;

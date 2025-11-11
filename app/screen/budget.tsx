@@ -18,7 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import ThemedText from "@/components/ThemedText";
 import Svg, { Circle } from "react-native-svg";
 import styles from "@/styles/budget";
-import { budgetService, BudgetResponse } from "@/services/api/budgetService";
+import { budgetService, BudgetResponse } from "@/services/budgetService";
 import CustomAlert from "@/common/customAlert";
 
 const CATEGORIES = [
@@ -501,7 +501,7 @@ export default function BudgetPage() {
                                 />
                             </View>
 
-                            <View style={[styles.cardIndicator, { backgroundColor: categoryData?.color || Colors.primary }]} />
+                            {/* <View style={[styles.cardIndicator, { backgroundColor: categoryData?.color || Colors.primary }]} /> */}
                         </TouchableOpacity>
                     );
                 })}

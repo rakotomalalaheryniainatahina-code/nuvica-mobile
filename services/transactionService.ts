@@ -1,6 +1,6 @@
 // services/api/transactionService.ts
 
-import apiClient from "./apiClient";
+import apiClient from "./api/apiClient";
 
 
 export interface TransactionData {
